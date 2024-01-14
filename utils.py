@@ -47,130 +47,139 @@ def load_data(json_path: str) -> pd.DataFrame:
     df_json.rename(columns={'episode':'dialogue_id'},inplace=True) # rename episode to dialogue_id
     return df_json
 
-
-def get_repeated_instances(df: pd.DataFrame):
+def get_repeated_instances(df: pd.DataFrame)-> tuple[list[str], list[int], list[int]]:
     """
     This function counts how many instances of the same dialogue are present in the dataframe
     and also it retrieves the biggest dialogue among each set of the instances of the same dialogue.
 
     This function returns:
-    - diags: the list that will contain the biggest dialogues among the set ofinstances
+    - diags : the list that will contain the biggest dialogues among the set ofinstances
     - count_list: the number of instances of the same dialogue that are in the dataset
     - indices: indices in the original dataframe to find the max dialogues
     """
 
     dialogues = df['utterances'] # get list of dialogues
-
     count = 0 # initialize count of instances to select
     max_diag = '' # string that will store the biggest dialogue among the group of cumulative dialogues
     count_list, diags = [] , [] # lists to store the count of instances and the dialogues
     indices = [] # store indices for retrieving max dialogue
+
     # loop throug all the dialogues
     for idx, utt in enumerate(dialogues):
-        if count == 0:
+        if count == 0: # first dialogue 
             first_diag = ''.join(str(ele) for ele in utt) # create a string with the first element in the group of instances of dialogues
-        curr_diag = ''.join(str(ele) for ele in utt)
+        curr_diag = ''.join(str(ele) for ele in utt) # convert the current dialogue to a string containing all the utterances
 
+        # check if the current dialogue we are considering contains the first dialogue of the group
         if first_diag in curr_diag:
-            count += 1 # increase the window
-            max_diag = curr_diag
+            count += 1 # increase the count and continue searching for dialogues in our list of dialogues
+            max_diag = curr_diag # set the current dialogue as max dialogue (max dialogue is always the last in the set of instances)
+        # if conditions not met --> we are in another set of dialogues, append max_diag and idx for storing
         else:        
             diags.append(max_diag)
             indices.append(idx)
 
-            if len(diags) == 1: 
+            if len(diags) == 1:  # fix the edge case of the first dialogue
                 count_list.append(count) # store this count for plotting later
             else:
-                count_list.append(count+1) 
+                count_list.append(count+1) # increase count+1 to avoid miscounts
             count = 0 # reset the count
 
-        # get last max dialogue
-        if idx == len(dialogues)-1:
+        if idx == len(dialogues)-1: # solve the edge case of last max dialogue
             diags.append(''.join(str(ele) for ele in utt))
             count_list.append(count)
             indices.append(idx)
-    # avoid misplacement of indexes            
-    np_indices = np.array(indices) - 1
+    np_indices = np.array(indices) - 1 # avoid mispositioning of indexes       
     return diags,count_list,np_indices
 
-# Function to calculate lengths for each utterance
+# Function to calculate number of words of each utterance in a dialogue
 def get_lengths(utterances):
     return np.array([len(utterance.split()) for utterance in utterances])
 
-def get_max_lenghts(df: pd.DataFrame)-> np.array:
-    # make copy to avoid aliasing
-    df_copy = df.copy()
+def get_utterance_lenghts(df: pd.DataFrame)-> np.array:
+    """"
+    This function computes the utterance length for all the entries in the dataframe
+    and then it flattens the array that stores them
+    """
 
-    # Apply the function to the 'utterance' column
-    df_copy.loc[:,'lengths_array'] = df['utterances'].apply(get_lengths)
-
-    # get the flattened array with all the utterance lengths
-    lengths_array = np.concatenate(df_copy['lengths_array'].values)
+    df_copy = df.copy() # make copy to avoid issues pertaining to aliasing
+    df_copy.loc[:,'lengths_array'] = df['utterances'].apply(get_lengths) # Apply the function to the 'utterance' column
+    lengths_array = np.concatenate(df_copy['lengths_array'].values) # get the flattened array with all the utterance lengths
     return lengths_array
 
-############################### VISUALIZATIONS ##############################
+############################### VISUALIZATIONS ######################################################
 
-from matplotlib.ticker import FuncFormatter
+def plot_dist_instances(count_instances_tr,count_instances_val,count_inst_list=None,splits=["Train","Validation","Test"],test=False):
+    """
+    This function plots side by side the histogram and cumulative distribution of the instances 
+    of dialogues in the dataset
+    """
 
-def plot_dist_instances(count_instances_tr,count_instances_val):
-    """
-    This function plots side by side the histogram
-    and cumulative distribution of the repetations of words in the dataset
-    """
     plt.figure(figsize=(15, 6),dpi=350)
+    plt.subplot(1, 2, 1) # Subplot for histogram of the instances
+    
+    # for i in len(range(count_inst_list)):
+    #     max_range = max(count_inst_list[i])
+    #     sns.histplot(data=count_inst_list[i], binwidth=binwidth, stat='percent',edgecolor='white',
+    #             binrange=(min(count_inst_list[i])-binwidth/2, max(count_inst_list[i])+binwidth/2),label=splits[i])
+        
+    #     if max(count_inst_list[i]) > max_range:
+    #         max_range = count_inst_list[i]
+    #     if test == False and i == 1:
+    #         break
 
-    # Plot histogram of repet
-    plt.subplot(1, 2, 1)
-    sns.histplot(data=count_instances_tr, binwidth=1, stat='percent',edgecolor='white',binrange=(0.5, 17.5),label='Train')
-    sns.histplot(data=count_instances_val, binwidth=1, stat='percent',edgecolor='white',binrange=(0.5, 17.5),label='Validation')
+    sns.histplot(data=[count_instances_tr,count_instances_val], stat='percent',edgecolor='white',discrete=True,multiple="dodge")
+    # sns.histplot(data=count_instances_val, stat='percent',edgecolor='white',discrete=True,label='Val',multiple="dodge")
+
+    # sns.histplot(data=count_instances_val, binwidth=1, stat='percent',edgecolor='white', discrete=True,
+                #  binrange=(min(count_instances_val)-binwidth/2, max(count_instances_val)+binwidth/2),label='Validation')
+
 
     plt.title('Histogram of instances of the same dialogue')
     plt.xlabel('Number of instances')
-    plt.xticks(np.arange(1,18,1))
-    plt.yticks(np.arange(0, 22, 2))
+    # plt.xticks(np.arange(2,max(max(count_instances_tr),max(count_instances_val))+1,1))
+    plt.xticks(np.arange(2,17+1,1))
+
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
     plt.gca().yaxis.set_major_formatter(formatter)
-    plt.legend()
-    plt.subplot(1, 2, 2)
+    plt.yticks(np.arange(0, 22, 2))
+    plt.legend(['Train','Validation'])
 
+    # Subplot for the cumulative distribution of the instances
+    plt.subplot(1, 2, 2)
     sns.histplot(data=count_instances_tr, binwidth=1, element='step', fill=False, cumulative=True, stat='density',label='Train')
     sns.histplot(data=count_instances_val, binwidth=1, element='step', fill=False, cumulative=True, stat='density',label='Validation')
 
-    plt.ylabel('')
-    plt.xlabel('Number of instances')
-
-    plt.yticks(np.arange(0,1.1,0.1))
-    plt.xticks(np.arange(2,17,1))
-    plt.grid()
     plt.title('Cumulative distribution of instances of the same dialogue')
+    plt.xlabel('Number of instances')
+    plt.ylabel('')
+    plt.xticks(np.arange(2,max(max(count_instances_tr),max(count_instances_val))+1,1))
+    
     formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
     plt.gca().yaxis.set_major_formatter(formatter)
+    plt.yticks(np.arange(0,1.1,0.1))
+    plt.grid()
     plt.legend()
     plt.show()
 
 # Plot utterance statistics
 def plot_num_utterances_dialogue(df: pd.DataFrame):
-    # Calculate number of utterances in the dialogue and create a new column
-    df['nb_utterences'] = df['utterances'].apply(len)
 
-    # Create a 1x2 subplot
+    df['nb_utterences'] = df['utterances'].apply(len) # Calculate number of utterances in the dialogue and create a new column
     plt.figure(figsize=(16, 7),dpi=250)
 
     # Plot the histogram of utterance lengths on the left
     plt.subplot(1, 2, 1)
     sns.histplot(data=df['nb_utterences'],binwidth=1, stat='percent',edgecolor='white')
 
-    # plt.hist(df['nb_utterences'], bins=24, edgecolor='k')
-    plt.xlabel('Utterance Length (number of utterances)',fontsize=12)
-    plt.ylabel('Frequency',fontsize=12)
-    formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
-
-    plt.gca().yaxis.set_major_formatter(formatter)
-
-    plt.xticks(np.arange(0, 26, 1),fontsize=12)  # Center xticks in the middle of the histogram bars
-    plt.yticks(np.arange(0, 11, 1),fontsize=12)
-
     plt.title('Number of utterances per dialogue',fontsize=14)
+    plt.xlabel('Utterance Length (number of utterances)',fontsize=12)
+    plt.ylabel('Percent',fontsize=12)
+
+    plt.xticks(np.arange(0, 26, 1),fontsize=12)  
+    formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
+    plt.gca().yaxis.set_major_formatter(formatter)
+    plt.yticks(np.arange(0, 11, 1),fontsize=12)
 
     # Create the boxplot on the right
     plt.subplot(1, 2, 2)
