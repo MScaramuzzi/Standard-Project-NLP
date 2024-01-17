@@ -211,7 +211,7 @@ def plot_num_words_utterance(lengths_array: np.array):
     plt.figure(figsize=(15, 6), dpi=350)
     plt.subplot(1, 2, 1)
 
-    sns.histplot(lengths_array, binwidth=4,binrange=[0,lengths_array.max()],stat='percent')
+    sns.histplot(lengths_array, binwidth=4,binrange=[0,lengths_array.max()],stat='percent',edgecolor='white')
 
     plt.xticks(np.arange(0,lengths_array.max()+1,4))
     plt.yticks(np.arange(0, 50, 5))
