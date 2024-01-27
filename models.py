@@ -64,13 +64,13 @@ class CoLGA(nn.Module):
         self.dropout = nn.Dropout(p=0.4)
 
     def forward(self, x):
-        xG = F.relu(self.globalNet(x['suggestive_text']))
+        x_global = F.relu(self.globalNet(x['suggestive_text']))
         for i in range(self.window_size):
             local_out = F.relu(self.localNet((x['emotion'], x['utterance']),        # check how you tokenize before
                                       (x['speaker'], x['utterance'])))
-            xL = torch.cat((xL, local_out), dim=1)
+            x_local = torch.cat((x_local, local_out), dim=1)
             
-        x = torch.cat((xG, xL), dim=1)
+        x = torch.cat((x_global, x_local), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
 
