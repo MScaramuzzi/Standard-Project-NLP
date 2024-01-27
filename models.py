@@ -9,6 +9,8 @@ from torch.utils.data import DataLoader
 import transformers
 from transformers import AutoModel, AutoModelForSequenceClassification
 
+# UTTERANCE_LEVEL SIZE = 128
+
 class ConvExtractor(nn.Module):
     def __init__(self, checkpoint: str):
         super(ConvExtractor, self).__init__()
