@@ -118,23 +118,8 @@ def plot_dist_instances(count_instances_tr,count_instances_val,count_inst_list=N
     plt.figure(figsize=(15, 6),dpi=350)
     plt.subplot(1, 2, 1) # Subplot for histogram of the instances
     
-    # for i in len(range(count_inst_list)):
-    #     max_range = max(count_inst_list[i])
-    #     sns.histplot(data=count_inst_list[i], binwidth=binwidth, stat='percent',edgecolor='white',
-    #             binrange=(min(count_inst_list[i])-binwidth/2, max(count_inst_list[i])+binwidth/2),label=splits[i])
-        
-    #     if max(count_inst_list[i]) > max_range:
-    #         max_range = count_inst_list[i]
-    #     if test == False and i == 1:
-    #         break
 
     sns.histplot(data=[count_instances_tr,count_instances_val], stat='percent',edgecolor='white',discrete=True,multiple="dodge")
-    # sns.histplot(data=count_instances_val, stat='percent',edgecolor='white',discrete=True,label='Val',multiple="dodge")
-
-    # sns.histplot(data=count_instances_val, binwidth=1, stat='percent',edgecolor='white', discrete=True,
-                #  binrange=(min(count_instances_val)-binwidth/2, max(count_instances_val)+binwidth/2),label='Validation')
-
-
     plt.title('Histogram of instances of the same dialogue')
     plt.xlabel('Number of instances')
     # plt.xticks(np.arange(2,max(max(count_instances_tr),max(count_instances_val))+1,1))
@@ -183,7 +168,8 @@ def plot_num_utterances_dialogue(df: pd.DataFrame):
 
     # Create the boxplot on the right
     plt.subplot(1, 2, 2)
-    ax = sns.boxplot(x='nb_utterences', data=df)
+    ax = sns.boxplot(x='nb_utterences', data=df,fill=False)
+    
 
     # Calculate quartiles
     q1 = df['nb_utterences'].quantile(0.25)
