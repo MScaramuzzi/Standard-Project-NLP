@@ -147,14 +147,12 @@ class FocalLoss(nn.Module):
 def focal_loss(alpha: Optional[Sequence] = None,
                gamma: float = 0.,
                reduction: str = 'mean',
-               device = 'cuda:1',
                dtype = torch.float32) -> FocalLoss:
     """Factory function for FocalLoss.
     Args:
         alpha (Sequence, optional): Weights for each class. Will be converted to a Tensor if not None.
         gamma (float, optional): A constant, as described in the paper.
         reduction (str, optional): 'mean', 'sum' or 'none'.
-        device (str, optional): Device to move alpha to.
         dtype (torch.dtype, optional): dtype to cast alpha to.
 
     Returns:
@@ -163,7 +161,6 @@ def focal_loss(alpha: Optional[Sequence] = None,
     if alpha is not None:
         if not isinstance(alpha, Tensor):
             alpha = torch.tensor(alpha)
-        alpha = alpha.to(device = device, dtype = dtype)
 
     fl = FocalLoss(alpha = alpha, gamma = gamma, reduction = reduction)
     
