@@ -60,7 +60,7 @@ def baselines_EFR(df: pd.DataFrame, seeds: list[int]):
 
 
 # This function uses the defined dummy baselines of both task (ERC and EFR) to predict the output on the test set and print the classification report for every model.
-def train_baselines_dummy(df_train: pd.DataFrame, df_test:pd.DataFrame, seeds: list[int], 
+def train_baselines_dummy(df_train: pd.DataFrame, df_val:pd.DataFrame, seeds: list[int], 
                           id2label: dict, unique_emotions: np.array, task: str):
     tbl = '---'
 
@@ -76,7 +76,7 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_test:pd.DataFrame, seeds: l
         # Predicting using erc baseline. Note that training majority baseline is independent of the seed.
         for key, model in models_ERC_dict.items():
             # TBD: spiega markdown/commento che non serve predictare le baseline sul validation
-            results_ERC[key] = model.predict(np.concatenate(df_test['utterances']))
+            results_ERC[key] = model.predict(np.concatenate(df_val['utterances']))
 
         # Printing classification reports
         for key, model in models_ERC_dict.items():
@@ -87,7 +87,7 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_test:pd.DataFrame, seeds: l
             else:  # majority baseline
                 print(f'\t\t[TASK] {name[1]} \t\t\t|\t\t[MODEL] {name[0]}')
                 print(f'{tbl*20}')
-            rep = classification_report(np.concatenate(df_test['emotions_num']), results_ERC[key], labels=list(id2label.keys()), target_names=unique_emotions)
+            rep = classification_report(np.concatenate(df_val['emotions_num']), results_ERC[key], labels=list(id2label.keys()), target_names=unique_emotions)
             print(rep)
             print()
             print('***'*20,'\n\n')
@@ -99,7 +99,7 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_test:pd.DataFrame, seeds: l
 
         # Predicting using efr baseline. Note that training majority baseline is independent of the seed.
         for key, model in models_EFR_dict.items():
-            results_EFR[key] = model.predict(np.concatenate(df_test['utterances']))
+            results_EFR[key] = model.predict(np.concatenate(df_val['utterances']))
 
         # Printing classification reports
         for key, model in models_EFR_dict.items():
@@ -110,7 +110,7 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_test:pd.DataFrame, seeds: l
             else:  # majority model
                 print(f'\t\t[TASK] {name[1]} \t\t\t|\t\t[MODEL] {name[0]}')
                 print(f'{tbl*20}')
-            rep = classification_report(np.concatenate(df_test['triggers']), results_EFR[key], target_names=['No-trigger','Trigger'])
+            rep = classification_report(np.concatenate(df_val['triggers']), results_EFR[key], target_names=['No-trigger','Trigger'])
             print(rep)
             print()
             print('***'*20,'\n\n')
