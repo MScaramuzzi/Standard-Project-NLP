@@ -6,58 +6,63 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.ticker import FuncFormatter
 
-def plot_dist_instances(count_instances_tr,count_instances_val,count_inst_list=None,splits=["Train","Validation","Test"],test=False):
-    """
-    This function plots side by side the histogram and cumulative distribution of the instances 
-    of dialogues in the dataset
-    """
-
-    plt.figure(figsize=(15, 6),dpi=350)
-    plt.subplot(1, 2, 1) # Subplot for histogram of the instances
+def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataFrame,
+                                num_instances_val: list[int], df_max_val: pd.DataFrame,
+                                color_train: str, color_val: str, bar_width: int):
     
-    # for i in len(range(count_inst_list)):
-    #     max_range = max(count_inst_list[i])
-    #     sns.histplot(data=count_inst_list[i], binwidth=binwidth, stat='percent',edgecolor='white',
-    #             binrange=(min(count_inst_list[i])-binwidth/2, max(count_inst_list[i])+binwidth/2),label=splits[i])
-        
-    #     if max(count_inst_list[i]) > max_range:
-    #         max_range = count_inst_list[i]
-    #     if test == False and i == 1:
-    #         break
+    df_max_tr = df_max_tr.copy()
+    df_max_tr['perc_instances'] = num_instances_tr # add column with instance for each dialogue
+    # compute how many times a dialogue is repeated in the dataset as a percentage
+    df_grp_tr = df_max_tr['perc_instances'].value_counts(normalize=True).mul(100).to_frame().reset_index(names=['instances'])
 
-    sns.histplot(data=[count_instances_tr,count_instances_val], stat='percent',edgecolor='white',discrete=True,multiple="dodge")
-    # sns.histplot(data=count_instances_val, stat='percent',edgecolor='white',discrete=True,label='Val',multiple="dodge")
+    df_max_val = df_max_val.copy()
+    df_max_val['perc_instances'] = num_instances_val
+    df_grp_val = df_max_val['perc_instances'].value_counts(normalize=True).mul(100).to_frame().reset_index(names=['instances'])
 
-    # sns.histplot(data=count_instances_val, binwidth=1, stat='percent',edgecolor='white', discrete=True,
-                #  binrange=(min(count_instances_val)-binwidth/2, max(count_instances_val)+binwidth/2),label='Validation')
+    fig, axes = plt.subplots(figsize=(15, 6),dpi=300, nrows=1, ncols=2)
+    plt.tight_layout()
 
+    # I: Barplot of distribution of repetitions for training and validation set
+    sns.barplot(data=df_grp_tr, x='instances', y='perc_instances',color=color_train,
+                width=bar_width, label='Train',ax=axes[0])
+    sns.barplot(data=df_grp_val, x='instances', y='perc_instances', color=color_val,
+                width=bar_width, label='Validation',ax=axes[0])
 
-    plt.title('Histogram of instances of the same dialogue')
-    plt.xlabel('Number of instances')
-    # plt.xticks(np.arange(2,max(max(count_instances_tr),max(count_instances_val))+1,1))
-    plt.xticks(np.arange(2,17+1,1))
+    # Manually adjust the position of bars of the train set barplot
+    for bar in axes[0].patches[len(df_grp_tr):]:
+        bar.set_x(bar.get_x() + 0.3)
 
+    x_pos = np.arange(bar_width/2,17 + bar_width/2 ,1)
+    axes[0].set_xticks(x_pos)
+    axes[0].set_yticks(np.arange(0,19,2))
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
-    plt.yticks(np.arange(0, 22, 2))
-    plt.legend(['Train','Validation'])
+    axes[0].yaxis.set_major_formatter(formatter)
 
-    # Subplot for the cumulative distribution of the instances
-    plt.subplot(1, 2, 2)
-    sns.histplot(data=count_instances_tr, binwidth=1, element='step', fill=False, cumulative=True, stat='density',label='Train')
-    sns.histplot(data=count_instances_val, binwidth=1, element='step', fill=False, cumulative=True, stat='density',label='Validation')
+    axes[0].set_title('Histogram of instances of the same dialogue', fontsize=16)
+    axes[0].set_xlabel('')
+    axes[0].set_ylabel('Percentages', fontsize=13)
 
-    plt.title('Cumulative distribution of instances of the same dialogue')
-    plt.xlabel('Number of instances')
-    plt.ylabel('')
-    plt.xticks(np.arange(2,max(max(count_instances_tr),max(count_instances_val))+1,1))
-    
+    # II: Cumulative plot of number of instances of each dialogue
+    sns.histplot(data=num_instances_tr, binwidth=1, element='step',
+                fill=False, cumulative=True, stat='density',
+                label='Train', color=color_train, ax=axes[1], lw=1.75)
+
+    sns.histplot(data=num_instances_val, binwidth=1, element='step',
+                fill=False, cumulative=True, stat='density',
+                label='Validation',color=color_val,ax=axes[1], lw=1.75)
+
+    axes[1].set_xticks(np.arange(2,17,1))
+    # axes[1].set_yticks(np.arange(0,1.1,0.1))
+
     formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
-    plt.yticks(np.arange(0,1.1,0.1))
-    plt.grid()
-    plt.legend()
+    axes[1].yaxis.set_major_formatter(formatter)
+    axes[1].set_ylabel('')
+    axes[1].set_title('Cumulative distribution of instances of the same dialogue',fontsize=16)
+    axes[1].legend()
+
+    fig.text(0.5, -0.04, 'Number of instances', ha='center', size=14) # set common x axis label for the two subplots
     plt.show()
+
 
 # Plot utterance statistics
 def plot_num_utterances_dialogue(df: pd.DataFrame):
