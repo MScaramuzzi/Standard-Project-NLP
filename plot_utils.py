@@ -58,7 +58,7 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
     axes[1].set_xticks(np.arange(2,17,1))
     axes[1].set_yticks(np.arange(0,1.1,0.1))
 
-    formatter = FuncFormatter(lambda y, _: f'{int(round(y*100,0))}%') # add percentage sign next to y ticks
+    formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
     axes[1].yaxis.set_major_formatter(formatter)
     axes[1].set_ylabel('')
     axes[1].set_title('Cumulative distribution of instances of the same dialogue',fontsize=16)
@@ -125,9 +125,9 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
 
     # Calculate the position for the title for first two plots
     x_suptitle = 0.5 * (axes[0].get_position().x1 + axes[1].get_position().x0)
-    y_suptitle = 1.015  # Adjust the y-coordinate to avoid overlapping text
+    y_suptitle = 1.0005  # Adjust the y-coordinate to avoid overlapping text
 
-    # Add a placeholder title between the first two histograms
+    # Add a title between the first two histograms
     fig.text(x_suptitle, y_suptitle, 'Histogram of number of words per dialogue in train and val set',
             ha='center', size=22)
 
@@ -145,8 +145,7 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
     fig.text(0.5, -0.04, 'Number of words per dialogue', ha='center', size=18) # add common label for x axis for the three plots
     plt.show()
 
-
-# 2.2.2 Distribution of words per utterance
+# 2.2.2 Distribution of utterances in dialogues
 def plot_num_utterances_dialogue(df: pd.DataFrame):
     """This function makes two plots side by side:
     1) an histogram for the number of utterances in a dialogue
@@ -190,7 +189,7 @@ def plot_num_utterances_dialogue(df: pd.DataFrame):
     plt.legend(fontsize=12)
     plt.show()
 
-# 2.2.3 Distribution of utterances in dialogues
+# 2.2.3 Distribution of words per utterance
 def plot_num_words_utterance(lengths_array: np.array):
     """This function makes two plots side by side:
     1) an histogram for the number of words in a utterance
