@@ -137,42 +137,6 @@ def plot_num_words_utterance(lengths_array: np.array):
     plt.grid() 
     plt.show()
 
-def plot_num_words_dial(max_dialogues: list[str]):
-    """This function makes two plots side by side:
-    1) an histogram for the number of words in a dialogue
-    2) the cumulative plot for the number of words in a doaòpgie
-    """
-    # compute num words per dialogues
-    num_word_diag = [len(x.split()) for x in max_dialogues]
-    plt.figure(figsize=(17, 6),dpi=350)
-    plt.subplot(1, 2, 1)
-
-    # Plot histogram
-    sns.histplot(data=num_word_diag, binrange=[10,270], binwidth=20, stat='percent',edgecolor='white')
-    plt.xticks(np.arange(0, 261, 20))
-    plt.yticks(np.arange(0, 24, 2))
-    # Set percentage sign for yticks
-    formatter = FuncFormatter(lambda y, _: f'{int(y)}%')
-    plt.gca().yaxis.set_major_formatter(formatter)
-
-    plt.title("Number of words per dialogue")
-    plt.xlabel('Number of words in the dialogue')
-
-    # Plot cumulative plot
-    plt.subplot(1, 2, 2)
-    sns.histplot(data=num_word_diag, binrange=[0,260], binwidth=15, element='step', fill=False, cumulative=True, stat='density')
-    plt.xticks(np.arange(0, 261, 15))
-    plt.yticks(np.arange(0,1.1,0.1))
-
-    formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
-    plt.xlabel('Number of words in the dialogue')
-    plt.ylabel('')
-    plt.title("Cumulative distribution of words per dialogue")
-    plt.grid() 
-    plt.show()
-
-
 # compute num words per dialogues
 def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str],
                         color_train: str, color_val: str):
@@ -215,7 +179,7 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
                 lw=2.5, color=color_val, element='step', fill=False,
                 ax=axes[2], cumulative=True, stat='density',label='Val')
 
-    axes[2].set_xticks(np.arange(0, 254, 20))
+    axes[2].set_xticks(np.arange(10, 214, 20))
     axes[2].set_yticks(np.arange(0,1.1,0.1))
 
     plt.tight_layout()
