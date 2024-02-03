@@ -146,10 +146,10 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
 
     # I. Plot histogram train set
     sns.histplot(data=num_word_diag_tr, binrange=[10,250],stat='percent',
-                color=color_train, edgecolor='white',binwidth=20,
+                color=color_train, edgecolor='white',binwidth=25,
                 ax=axes[0], alpha=0.85,label='Train')
 
-    axes[0].set_xticks(np.arange(10, 226, 25))
+    # axes[0].set_xticks(np.arange(10, 226, 25))
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # Set percentage sign for yticks
 
 
