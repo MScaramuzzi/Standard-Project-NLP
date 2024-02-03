@@ -151,43 +151,56 @@ def plot_num_utterances_dialogue(df: pd.DataFrame):
     1) an histogram for the number of utterances in a dialogue
     2) the boxplot for the number of utterances in a dialogue
     """
+    plt.style.use('default')
+
     df['nb_utterences'] = df['utterances'].apply(len) # Calculate number of utterances in the dialogue and create a new column
+    fig, axes = plt.subplots(figsize=(16, 8),dpi=300, nrows=1, ncols=2)
     
-    plt.figure(figsize=(16, 7),dpi=250)
-    plt.subplot(1, 2, 1) # Plot the histogram of utterance lengths on the left
-    sns.histplot(data=df['nb_utterences'],binwidth=1, stat='percent',edgecolor='white')
-    plt.title('Number of utterances per dialogue',fontsize=14)
-    plt.xlabel('Utterance Length (number of utterances)',fontsize=12)
-    plt.ylabel('Percent',fontsize=12)
+    # I. Plot the histogram of utterance lengths for the whole dataset on the first subplot
+    sns.histplot(data=df['nb_utterences'],binwidth=1, stat='percent',
+                 ax=axes[0], edgecolor='white')
 
-    plt.xticks(np.arange(0, 26, 1),fontsize=12)  
-    plt.yticks(np.arange(0, 11, 1),fontsize=12)
+    axes[0].set_title('Number of utterances per dialogue',fontsize=14)
+    axes[0].set_xlabel('Utterance Length (number of utterances)',fontsize=12)
+    axes[0].set_ylabel('Percent',fontsize=12)
+
+    axes[0].set_xticks(np.arange(0, 26, 1))
+    axes[0].set_yticks(np.arange(0, 11, 1))
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
+    axes[0].yaxis.set_major_formatter(formatter)
 
-    # Create the boxplot on the right
-    plt.subplot(1, 2, 2)
-    ax = sns.boxplot(x='nb_utterences', data=df)
+    axes[0].grid(axis='y', linestyle='--')
+
+    # II. Plot boxplot on the second subplot
+    sns.boxplot(y='nb_utterences', data=df, fill=False, 
+                width=0.5, ax=axes[1], linewidth=2,
+                whis=1.2, medianprops=dict(linewidth=3.5, color=COLOR_VAL))
 
     # Compute quartiles
     q1 = df['nb_utterences'].quantile(0.25)
-    median = df['nb_utterences'].median()
+    median = df['nb_utterences'].median() # 
     q3 = df['nb_utterences'].quantile(0.75)
 
     # Highlight quartiles with vertical lines
-    ax.axvline(x=q1, color='g', linestyle='--', label=f'Q1: {q1:.2f}')
-    ax.axvline(x=median, color='b', linestyle='--', label=f'Median: {median:.2f}')
-    ax.axvline(x=q3, color='r', linestyle='--', label=f'Q3: {q3:.2f}')
+    axes[1].axhline(y=q1, color='g', linestyle='--', label=f'Q1: {q1:.2f}',xmin=0, xmax=0.25)
+    axes[1].axhline(y=median, color='b', linestyle='--', label=f'Median: {median:.2f}',xmin=0, xmax=0.25)
+    axes[1].axhline(y=q3, color='firebrick', linestyle='--', label=f'Q3: {q3:.2f}', xmin=0, xmax=0.25)
 
-    plt.title('Boxplot for number of utterances per dialogue',fontsize=14)
-    plt.xlabel('Number of utterances per dialogue',fontsize=12)
+
+    axes[1].set_title('Boxplot for number of utterances per dialogue',fontsize=14)
+    axes[1].set_ylabel('Number of utterances per dialogue',fontsize=12)
 
     # Show quartile values on the x-axis
-    ax.set_xticks([q1, median, q3])
-    ax.set_xticklabels([f'{q1:.2f}', f'{median:.2f}', f'{q3:.2f}'], fontsize=12)
+    for ax in axes:
+        ax.tick_params(axis='both', which='major') 
+
+    axes[1].set_yticks([q1, median, q3])
+    axes[1].set_yticklabels([f'{q1:.2f}', f'{median:.2f}', f'{q3:.2f}'])
+    axes[1].legend(fontsize=12)
+
     plt.tight_layout()
-    plt.legend(fontsize=12)
     plt.show()
+
 
 # 2.2.3 Distribution of words per utterance
 def plot_num_words_utterance(lengths_array_tr: np.array, lengths_array_val: np.array,
