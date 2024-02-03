@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from torch.utils.data import DataLoader 
 import transformers
-from transformers import AutoModel, AutoModelForSequenceClassification
+from transformers import AutoModel, AutoModelForSequenceClassification, AutoConfig
 
 # UTTERANCE_LEVEL SIZE = 128
 
@@ -55,16 +55,26 @@ class LocalNet(nn.Module):
         return x
 
 class CoLGA(nn.Module):
+    def getGlobalNet(checkpoint: str):
+        model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+        config = AutoConfig.from_pretrained(checkpoint)
+
+        # customize classifier
+        model.classifier = nn.Linear(config.hidden_size, config.hidden_size)
+        
+        return model
+    
     def __init__(self, checkpoint: str, window_size: int = 7):
         super(CoLGA, self).__init__()
         self.window_size = window_size
-        self.globalNet = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+        self.globalNet = getGlobalNet(checkpoint)
         self.localNet = LocalNet(checkpoint=checkpoint)
         self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
-
+        self.dropout_global = nn.Dropout(p=0.4, inplace=False)
+    
     def forward(self, x):
-        x_global = F.relu(self.globalNet(x['suggestive_text']))
+        x_global = F.relu(self.dropout_global(self.globalNet(x['suggestive_text'])))
         for i in range(self.window_size):
             local_out = F.relu(self.localNet((x['emotion'], x['utterance']),        # check how you tokenize before
                                       (x['speaker'], x['utterance'])))
