@@ -56,7 +56,7 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
                 label='Validation',color=color_val,ax=axes[1], lw=1.75)
 
     axes[1].set_xticks(np.arange(2,17,1))
-    axes[1].set_yticks(np.arange(0,1.5,0.15))
+    axes[1].set_yticks(np.arange(0,1.1,0.1))
 
     formatter = FuncFormatter(lambda y, _: f'{int(round(y*100,0))}%') # add percentage sign next to y ticks
     axes[1].yaxis.set_major_formatter(formatter)
