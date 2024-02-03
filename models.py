@@ -60,10 +60,10 @@ class CoLGA(nn.Module):
         super(CoLGA, self).__init__()
         self.window_size = window_size
         self.globalNet = self.getGlobalNet(checkpoint)
+        self.dropout_global = nn.Dropout(p=0.1, inplace=False)
         self.localNet = LocalNet(checkpoint=checkpoint)
         self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
-        self.dropout_global = nn.Dropout(p=0.1, inplace=False)
 
     def getGlobalNet(self, checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
