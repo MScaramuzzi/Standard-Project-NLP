@@ -6,10 +6,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.ticker import FuncFormatter
 
+# 2.1 Dialogues with multiple instances
 def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataFrame,
                                 num_instances_val: list[int], df_max_val: pd.DataFrame,
                                 color_train: str, color_val: str, bar_width: int):
-    
+    """This function plots the number of instances of each dialogue, it generates two plots side by side:
+    1) Bar chart of the percentage of instances for each dialogue in train and validation set, plotted adjacent to each other.  
+    2) Cumulative plot of the distribution of instances for each dialogue in train and validation set, plotted jointly.
+    """
     df_max_tr = df_max_tr.copy()
     df_max_tr['perc_instances'] = num_instances_tr # add column with instance for each dialogue
     # compute how many times a dialogue is repeated in the dataset as a percentage
@@ -52,7 +56,7 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
                 label='Validation',color=color_val,ax=axes[1], lw=1.75)
 
     axes[1].set_xticks(np.arange(2,17,1))
-    axes[1].set_yticks(np.arange(0,1.15,0.15))
+    axes[1].set_yticks(np.arange(0,1,0.15))
 
     formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
     axes[1].yaxis.set_major_formatter(formatter)
@@ -63,9 +67,10 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
     fig.text(0.5, -0.04, 'Number of instances', ha='center', size=14) # set common x axis label for the two subplots
     plt.show()
 
-# compute num words per dialogues
+# 2.2 Dialogues composition
 def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str],
                         color_train: str, color_val: str):
+    # compute num words per dialogues
 
     num_word_diag_tr  = [len(x.split()) for x in max_dialogues_tr] # generate list with word lengths for dialogues in train set
     num_word_diag_val = [len(x.split()) for x in max_dialogues_val] # generate list with word lengths for dialogues in val set
@@ -95,7 +100,7 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
                 color=color_val, edgecolor='white', bins=bins_val,
                 ax=axes[1], alpha=0.85, label='Val')
 
-    axes[1].set_yticks(np.arange(0, 22, 2))
+    axes[1].set_yticks(np.arange(0, 24, 2))
     axes[1].set_xticks(bins_val)
     axes[1].set_ylabel('')
 
