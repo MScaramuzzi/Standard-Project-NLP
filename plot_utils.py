@@ -190,33 +190,75 @@ def plot_num_utterances_dialogue(df: pd.DataFrame):
     plt.show()
 
 # 2.2.3 Distribution of words per utterance
-def plot_num_words_utterance(lengths_array: np.array):
+def plot_num_words_utterance(lengths_array_tr: np.array, lengths_array_val: np.array,
+                             color_train: str, color_val: str):
     """This function makes two plots side by side:
     1) an histogram for the number of words in a utterance
     2) the cumulative plot for the number of words in a utterance
     """
-    plt.figure(figsize=(15, 6), dpi=350)
-    plt.subplot(1, 2, 1)  # Create subplot for histogram of word counts
-    sns.histplot(lengths_array, binwidth=4,binrange=[0,lengths_array.max()],stat='percent',edgecolor='white')
-    
-    plt.xticks(np.arange(0,lengths_array.max()+1,4))
-    plt.yticks(np.arange(0, 50, 5))
-    formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
-    plt.title('Histogram of Word Counts per Utterance')
-    plt.xlabel('Number of Words')
-    
-    plt.subplot(1, 2, 2) # Plot cumulative plot 
-    sns.histplot(data=lengths_array, binrange=[0,48], binwidth=2, element='step', fill=False, cumulative=True, stat='density')
-    plt.xticks(np.arange(0, 49, 4))
-    plt.yticks(np.arange(0,1.1,0.1))
-    formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
+    fig, axes = plt.subplots(figsize=(24, 8), dpi=350, nrows=1,ncols=3)
 
-    plt.title("Cumulative distribution of words per utterance")
-    plt.xlabel('Number of words ')
-    plt.ylabel('')
-    plt.grid() 
+    # plotting variables 
+    STEP = 5
+    max_tr = max(lengths_array_tr)
+    bins_tr = np.arange(0, max_tr + STEP, STEP)
+
+    max_val = max(lengths_array_val)
+    bins_val = np.arange(0, max_val + STEP, STEP)
+    formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
+
+    # I. Plot histogram train set
+    sns.histplot(lengths_array_tr, bins=bins_tr,
+                stat='percent',edgecolor='white', label='Train',
+                ax=axes[0], alpha=0.85, color=color_train)
+    
+    # Set histograms ticks (and grid) to match the histogram rectangles  
+    axes[0].set_xticks(bins_tr)
+    axes[0].set_ylabel('Percent', fontsize=16, labelpad=20)
+
+    # II. Plot histogram validation set
+    sns.histplot(lengths_array_val, bins=bins_val,
+                stat='percent',edgecolor='white', label='Validation',
+                ax=axes[1], alpha=0.85, color=color_val)
+    
+    axes[1].set_xticks(bins_val)
+    axes[1].set_yticks(np.arange(0,40,5))
+    axes[1].set_ylabel('')
+
+    # Calculate the position for the title for first two plots
+    x_suptitle = 0.5 * (axes[0].get_position().x1 + axes[1].get_position().x0)
+    y_suptitle = 1.0005  # Adjust the y-coordinate to avoid overlapping text
+
+    # Add a title between the first two histograms
+    fig.text(x_suptitle, y_suptitle, 'Histogram of number of words per utterance in train and val set',
+            ha='center', size=22)
+
+    # III. Plot cumulative plot
+
+    sns.histplot(data=lengths_array_tr, bins=bins_tr, lw=2.5,
+                color=color_train, element='step', fill=False, 
+                ax=axes[2], cumulative=True, stat='density', label='Train')
+
+    sns.histplot(data=lengths_array_val, bins=bins_val, lw=2.5,
+                color=color_val, element='step', fill=False, 
+                ax=axes[2], cumulative=True, stat='density', label='Val')
+
+    axes[2].set_xticks(bins_tr)
+    axes[2].set_title("Cumulative distribution of words per utterance")
+
+    # Add percentage signs to each of the subplots
+    for ax in axes:
+        ax.tick_params(axis='both', labelsize=16)
+        ax.legend(fontsize=16)
+        if ax == axes[2]:
+            formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks for third plot
+            ax.yaxis.set_major_formatter(formatter)
+            ax.set_ylabel('')
+        else:
+            ax.yaxis.set_major_formatter(formatter)
+
+    fig.text(0.5, -0.04, 'Number of words', ha='center', size=18) # add common label for x axis for the three plots
+    fig.tight_layout()
     plt.show()
 
 #### 2.4 Distribution of triggers across the dataset ####
