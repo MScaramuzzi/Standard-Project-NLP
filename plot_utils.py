@@ -140,53 +140,65 @@ def plot_num_words_utterance(lengths_array: np.array):
 # compute num words per dialogues
 def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str],
                         color_train: str, color_val: str):
-    num_word_diag_tr  = [len(x.split()) for x in max_dialogues_tr] 
-    num_word_diag_val = [len(x.split()) for x in max_dialogues_val]
+
+    num_word_diag_tr  = [len(x.split()) for x in max_dialogues_tr] # generate list with word lengths for dialogues in train set
+    num_word_diag_val = [len(x.split()) for x in max_dialogues_val] # generate list with word lengths for dialogues in val set
     fig, axes = plt.subplots(figsize=(24,8),dpi=300,nrows=1,ncols=3)
 
-    # I. Plot histogram train set
-    sns.histplot(data=num_word_diag_tr, binrange=[10,250],stat='percent',
-                color=color_train, edgecolor='white',binwidth=25,
-                ax=axes[0], alpha=0.85,label='Train')
+    # plotting variables
+    STEP = 20
+    max_tr = max(num_word_diag_tr)
+    bins_tr = np.arange(5, max(num_word_diag_tr) + STEP, STEP)
 
-    # axes[0].set_xticks(np.arange(10, 226, 25))
+    min_val = min(num_word_diag_val)
+    max_val = max(num_word_diag_val)
+    bins_val = np.arange(10, max_val+STEP, STEP)
+
+    # I. Plot histogram train set
+    sns.histplot(data=num_word_diag_tr, stat='percent',
+                color=color_train, edgecolor='white', bins=bins_tr,
+                ax=axes[0], alpha=0.85, label='Train')
+
+    axes[0].set_xticks(bins_tr)
+    axes[0].set_yticks(np.arange(0, 24, 2))
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # Set percentage sign for yticks
 
-
     # II. Plot histogram validation set
-    sns.histplot(data=num_word_diag_val, binrange=[10,200],color=color_val,
-                stat='percent', ax=axes[1], binwidth=20,
-                alpha=0.85, label='Val')
+    sns.histplot(data=num_word_diag_val, stat='percent',
+                color=color_val, edgecolor='white', bins=bins_val,
+                ax=axes[1], alpha=0.85, label='Val')
 
-    axes[1].set_yticks(np.arange(0, 24, 2))
-    axes[1].set_xticks(np.arange(10, 220, 20))
+    axes[1].set_yticks(np.arange(0, 22, 2))
+    axes[1].set_xticks(bins_val)
+    axes[1].set_ylabel('')
 
-    plt.ylabel('')
-    # Calculate the position for the title
-    x_title = 0.5 * (axes[0].get_position().x1 + axes[1].get_position().x0)
-    y_title = 1.015  # Adjust the y-coordinate to avoid overlapping text
-
-    # Add a placeholder title between the first two histograms
-    fig.text(x_title, y_title, 'Histogram of number of words per dialogue in train and val set',
-            ha='center', size=22)
-
-    # III. Plot cumulative
-    sns.histplot(data=num_word_diag_tr, binrange=[0,230], binwidth=15,
+    # III. Plot cumulative for train and val set
+    sns.histplot(data=num_word_diag_tr, bins=bins_tr,
                 lw=2.5, color=color_train, element='step', fill=False,
                 ax=axes[2], cumulative=True, stat='density',label='Train')
 
-    sns.histplot(data=num_word_diag_val, binrange=[0,200], binwidth=15,
+    sns.histplot(data=num_word_diag_val, bins=bins_val,
                 lw=2.5, color=color_val, element='step', fill=False,
                 ax=axes[2], cumulative=True, stat='density',label='Val')
 
-    axes[2].set_xticks(np.arange(10, 214, 20))
+
+    bins = np.arange(5, max(num_word_diag_tr) + STEP, STEP)
+    axes[2].set_xticks(bins)
+    axes[2].set_ylabel('')
+    axes[2].set_title("Cumulative distribution of words per dialogue")
     axes[2].set_yticks(np.arange(0,1.1,0.1))
 
-    plt.tight_layout()
-    fig.text(0.5, -0.04, 'Number of words per dialogue', ha='center', size=18) # add common label for x axis for the three plots
-    plt.ylabel('')
-    plt.title("Cumulative distribution of words per dialogue")
+    #### Common plotting sections
 
+    # Calculate the position for the title for first two plots
+    x_suptitle = 0.5 * (axes[0].get_position().x1 + axes[1].get_position().x0)
+    y_suptitle = 1.015  # Adjust the y-coordinate to avoid overlapping text
+
+    # Add a placeholder title between the first two histograms
+    fig.text(x_suptitle, y_suptitle, 'Histogram of number of words per dialogue in train and val set',
+            ha='center', size=22)
+
+    # Add percentage signs to each of the subplots
     for ax in axes:
         ax.tick_params(axis='both', labelsize=16)
         ax.legend(fontsize=18)
@@ -196,8 +208,11 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
         else:
             ax.yaxis.set_major_formatter(formatter)
 
+    plt.tight_layout()
+    fig.text(0.5, -0.04, 'Number of words per dialogue', ha='center', size=18) # add common label for x axis for the three plots
 
     plt.show()
+
 def plot_num_triggers_diag(trigger_array: np.array):
     """
     This function plots the histogram of number of triggers per dialogue
