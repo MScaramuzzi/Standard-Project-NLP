@@ -55,6 +55,15 @@ class LocalNet(nn.Module):
         return x
 
 class CoLGA(nn.Module):
+    def __init__(self, checkpoint: str, window_size: int = 7):
+        super(CoLGA, self).__init__()
+        self.window_size = window_size
+        self.globalNet = self.getGlobalNet(checkpoint)
+        self.localNet = LocalNet(checkpoint=checkpoint)
+        self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
+        self.dropout = nn.Dropout(p=0.4)
+        self.dropout_global = nn.Dropout(p=0.4, inplace=False)
+
     def getGlobalNet(checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
         config = AutoConfig.from_pretrained(checkpoint)
@@ -63,15 +72,6 @@ class CoLGA(nn.Module):
         model.classifier = nn.Linear(config.hidden_size, config.hidden_size)
         
         return model
-    
-    def __init__(self, checkpoint: str, window_size: int = 7):
-        super(CoLGA, self).__init__()
-        self.window_size = window_size
-        self.globalNet = getGlobalNet(checkpoint)
-        self.localNet = LocalNet(checkpoint=checkpoint)
-        self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
-        self.dropout = nn.Dropout(p=0.4)
-        self.dropout_global = nn.Dropout(p=0.4, inplace=False)
     
     def forward(self, x):
         x_global = F.relu(self.dropout_global(self.globalNet(x['suggestive_text'])))
