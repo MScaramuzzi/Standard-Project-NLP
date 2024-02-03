@@ -146,7 +146,7 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
     plt.show()
 
 # 2.2.2 Distribution of utterances in dialogues
-def plot_num_utterances_dialogue(df: pd.DataFrame):
+def plot_num_utterances_dialogue(df: pd.DataFrame, median_color: str):
     """This function makes two plots side by side:
     1) an histogram for the number of utterances in a dialogue
     2) the boxplot for the number of utterances in a dialogue
@@ -174,7 +174,7 @@ def plot_num_utterances_dialogue(df: pd.DataFrame):
     # II. Plot boxplot on the second subplot
     sns.boxplot(y='nb_utterences', data=df, fill=False, 
                 width=0.5, ax=axes[1], linewidth=2,
-                whis=1.2, medianprops=dict(linewidth=3.5, color=COLOR_VAL))
+                whis=1.2, medianprops=dict(linewidth=3.5, color=median_color))
 
     # Compute quartiles
     q1 = df['nb_utterences'].quantile(0.25)
