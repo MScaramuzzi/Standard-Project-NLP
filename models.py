@@ -15,7 +15,8 @@ class ConvExtractor(nn.Module):
     def __init__(self, checkpoint: str):
         super(ConvExtractor, self).__init__()
         self.embedder = AutoModel.from_pretrained(checkpoint)
-        self.input_conv = nn.Conv1d(in_channels = 768, out_channels = 128, kernel_size = 3)
+        self.embedder_config = AutoConfig.from_pretrained(checkpoint)
+        self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3)
         self.conv1 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 4)
         self.conv2 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 5)
         self.pool = nn.MaxPool1d(kernel_size = 2)
@@ -31,7 +32,7 @@ class ConvExtractor(nn.Module):
         x = F.relu(x)           
         x = self.conv3(x)       # 44
         x = self.pool(x)        # 22
-        # x = F.relu(x)
+        x = F.relu(x)
         x = x.reshape(x.shape[0], -1)   # flatten
         x = self.fc(x)
 
@@ -62,7 +63,7 @@ class CoLGA(nn.Module):
         self.localNet = LocalNet(checkpoint=checkpoint)
         self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
-        self.dropout_global = nn.Dropout(p=0.4, inplace=False)
+        self.dropout_global = nn.Dropout(p=0.1, inplace=False)
 
     def getGlobalNet(self, checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
