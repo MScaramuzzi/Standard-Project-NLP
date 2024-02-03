@@ -64,7 +64,7 @@ class CoLGA(nn.Module):
         self.dropout = nn.Dropout(p=0.4)
         self.dropout_global = nn.Dropout(p=0.4, inplace=False)
 
-    def getGlobalNetself, checkpoint: str):
+    def getGlobalNet(self, checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
         config = AutoConfig.from_pretrained(checkpoint)
 
