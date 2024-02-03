@@ -178,7 +178,7 @@ def plot_num_utterances_dialogue(df: pd.DataFrame, median_color: str):
 
     # Compute quartiles
     q1 = df['nb_utterences'].quantile(0.25)
-    median = df['nb_utterences'].median() # 
+    median = df['nb_utterences'].median() 
     q3 = df['nb_utterences'].quantile(0.75)
 
     # Highlight quartiles with vertical lines
