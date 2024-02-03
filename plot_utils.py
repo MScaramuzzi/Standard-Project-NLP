@@ -56,7 +56,7 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
                 label='Validation',color=color_val,ax=axes[1], lw=1.75)
 
     axes[1].set_xticks(np.arange(2,17,1))
-    axes[1].set_yticks(np.arange(0,1,0.15))
+    axes[1].set_yticks(np.arange(0,1.1,0.15))
 
     formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
     axes[1].yaxis.set_major_formatter(formatter)
@@ -67,7 +67,9 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
     fig.text(0.5, -0.04, 'Number of instances', ha='center', size=14) # set common x axis label for the two subplots
     plt.show()
 
-# 2.2 Dialogues composition
+####### 2.2 Dialogues composition #######
+
+# 2.2.1 Distribution of words per dialogue
 def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str],
                         color_train: str, color_val: str):
     # compute num words per dialogues
@@ -144,7 +146,7 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
     plt.show()
 
 
-# Plot utterance statistics
+# 2.2.2 Distribution of words per utterance
 def plot_num_utterances_dialogue(df: pd.DataFrame):
     """This function makes two plots side by side:
     1) an histogram for the number of utterances in a dialogue
@@ -188,6 +190,7 @@ def plot_num_utterances_dialogue(df: pd.DataFrame):
     plt.legend(fontsize=12)
     plt.show()
 
+# 2.2.3 Distribution of utterances in dialogues
 def plot_num_words_utterance(lengths_array: np.array):
     """This function makes two plots side by side:
     1) an histogram for the number of words in a utterance
@@ -217,6 +220,7 @@ def plot_num_words_utterance(lengths_array: np.array):
     plt.grid() 
     plt.show()
 
+#### 2.4 Distribution of triggers across the dataset ####
 
 def plot_num_triggers_diag(trigger_array: np.array):
     """
@@ -241,6 +245,14 @@ def plot_num_triggers_diag(trigger_array: np.array):
     plt.show()
 
 def plot_trigger_distance(trigger_array: np.array):
+
+#### 2.3 Distribution of emotions across the dataset ####
+
+# 2.3.1 TBC
+
+# 2.3.2 TBC
+
+
     """
     This function plots the distribution of the distances between the trigger and the target utterance
     """
