@@ -167,6 +167,7 @@ def train_baseline_bert(model_name: str, task: str,
 
     # outputting utilities
     print()
+    print()
     print(f'{TABLE*20} MODEL: {model_name} | TASK: {task} | SEED: {seed} {TABLE*20}')
     print()
     trainer.train()
