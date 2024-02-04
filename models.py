@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from torch.utils.data import DataLoader 
 import transformers
-from transformers import AutoModel, AutoModelForSequenceClassification, AutoConfig, AutoTokenizer
+from transformers import AutoModel, AutoModelForSequenceClassification, AutoConfig
 
 # UTTERANCE_LEVEL SIZE = 128
 
@@ -79,24 +79,14 @@ class CoLGA(nn.Module):
         x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text'])))
         x_local = torch.empty((0))
         for i in range(self.window_size):
-            if i >= len(x['emotions_utterances']['input_ids']):
-                x_emo = {
-                    'input_ids': torch.tensor([self.tokenizer.pad_token_id]*100),
-                    'attention_mask': torch.tensor([1]*100)
-                }
-                x_spe = {
-                    'input_ids': torch.tensor([self.tokenizer.pad_token_id]*100),
-                    'attention_mask': torch.tensor([1]*100)
-                }
-            else:
-                x_emo = {
-                    'input_ids': x['emotions_utterances']['input_ids'][i],
-                    'attention_mask': x['emotions_utterances']['attention_mask'][i]
-                }
-                x_spe = {
-                    'input_ids': x['speakers_utterances']['input_ids'][i],
-                    'attention_mask': x['speakers_utterances']['attention_mask'][i]
-                }
+            x_emo = {
+                'input_ids': x['emotions_utterances']['input_ids'][i],
+                'attention_mask': x['emotions_utterances']['attention_mask'][i]
+            }
+            x_spe = {
+                'input_ids': x['speakers_utterances']['input_ids'][i],
+                'attention_mask': x['speakers_utterances']['attention_mask'][i]
+            }
             local_out = F.relu(self.localNet(x_emo, x_spe))
             x_local = torch.cat((x_local, local_out), dim=0)
             
