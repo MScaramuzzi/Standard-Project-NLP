@@ -4,6 +4,7 @@ import torch
 from random import random
 import pandas as pd 
 import json
+import os
 
 # Visualization libraries
 import matplotlib.pyplot as plt
@@ -12,10 +13,13 @@ from matplotlib.ticker import FuncFormatter
 
 
 # setting the seed
-def ensure_reproducibility(seed):
+def ensure_reproducibility(seed) -> None:
     random.seed(seed)
-    torch.manual_seed(seed)
     np.random.seed(seed)
+    torch.manual_seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    torch.cuda.manual_seed(seed)
+
 
 def add_emotion_idx(df:pd.DataFrame) -> pd.DataFrame:
     # Generate a list of all emotions

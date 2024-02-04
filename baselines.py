@@ -2,7 +2,10 @@ import pandas as pd
 import numpy as np
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import classification_report
-
+from utils import ensure_reproducibility
+from transformers import TrainingArguments, Trainer
+import os
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 def baselines_ERC(df: pd.DataFrame, seeds: list[int]):
     # This function defines the dummy baselines for the ERC task, and fits them to the dataset
@@ -114,3 +117,60 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_val:pd.DataFrame, seeds: li
             print(rep)
             print()
             print('***'*20,'\n\n')
+
+
+def train_baseline_bert(model_name: str, task: str, 
+                        checkpoint: str, args: TrainingArguments,
+                        compute_metrics, num_labels,
+                        id2label, label2id,
+                        train_set, val_set,
+                        tokenizer, seed: int):
+    
+    # model_name = 'fine_tuned_bert | full_bert
+    # task = 'ERC' or 'EFR'
+    ensure_reproducibility(seed) # setting the seed
+    TABLE = '-' # outputting constant
+
+    # Setting output directories
+    out_dir = f"./{model_name}_{task}_{seed}"
+    os.makedirs(out_dir, exist_ok=True)
+    args.output_dir = out_dir
+
+    args.seed = seed # set seed for hugging face Training Arguments
+
+    # Check the task given in the input parameters is correct
+    if task not in ['ERC', 'EFR']:
+            print('Task not accepted. Please choose between ERC and EFR.')
+            return
+
+    if task == 'ERC':     # instantiate model for ERC task
+        model = AutoModelForSequenceClassification.from_pretrained(checkpoint,
+                                                            num_labels=num_labels,
+                                                            id2label=id2label,
+                                                            label2id=label2id)
+        
+    else: # task is EFR
+        model = AutoModelForSequenceClassification.from_pretrained(checkpoint,num_labels=1) # EFR is binary classification on triggers
+
+    if model_name == 'full_bert':
+        for param in model.parameters(): # unfreeze all bert weights to perform the fine-tuning on the whole architecture
+                param.requires_grad = True
+
+    trainer = Trainer(
+        model,
+        args,
+        train_dataset = train_set,
+        eval_dataset = val_set,
+        tokenizer = tokenizer,
+        compute_metrics = compute_metrics
+    )
+
+    # outputting utilities
+    print()
+    print(f'{TABLE*20} MODEL: {model_name} | TASK: {task} | SEED: {seed} {TABLE*20}')
+    print()
+    trainer.train()
+    print()
+
+
+    pass

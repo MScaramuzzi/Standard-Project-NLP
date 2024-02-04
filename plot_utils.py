@@ -44,7 +44,7 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
 
     axes[0].set_title('Histogram of instances of the same dialogue', fontsize=16)
     axes[0].set_xlabel('')
-    axes[0].set_ylabel('Percentages', fontsize=13)
+    axes[0].set_ylabel('Percent', fontsize=13)
 
     # II: Cumulative plot of number of instances of each dialogue
     sns.histplot(data=num_instances_tr, binwidth=1, element='step',
