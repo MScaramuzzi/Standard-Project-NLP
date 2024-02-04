@@ -68,7 +68,6 @@ class CoLGA(nn.Module):
     def getGlobalNet(self, checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
         config = AutoConfig.from_pretrained(checkpoint)
-        self.tokenizer = AutoTokenizer.from_pretrained(checkpoint)
         
         # customize classifier
         model.classifier = nn.Linear(config.hidden_size, config.hidden_size)
