@@ -1,7 +1,7 @@
 # Data libraries
 import numpy as np
 import torch
-from random import random
+import random
 import pandas as pd 
 import json
 import os
