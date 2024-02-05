@@ -12,11 +12,11 @@ from transformers import AutoModel, AutoModelForSequenceClassification, AutoConf
 # UTTERANCE_LEVEL SIZE = 128
 
 class ConvExtractor(nn.Module):
-    def __init__(self, checkpoint: str):
+    def __init__(self, checkpoint: str, device: torch.device):
         super(ConvExtractor, self).__init__()
         self.embedder = AutoModel.from_pretrained(checkpoint)
         self.embedder_config = AutoConfig.from_pretrained(checkpoint)
-        self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3)
+        self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3).to(device)
         self.conv1 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 4)
         self.conv2 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 5)
         self.pool = nn.MaxPool1d(kernel_size = 2)
@@ -40,10 +40,10 @@ class ConvExtractor(nn.Module):
         return x
 
 class LocalNet(nn.Module):
-    def __init__(self, checkpoint: str):
+    def __init__(self, checkpoint: str, device: torch.device):
         super(LocalNet, self).__init__()
-        self.ext1 = ConvExtractor(checkpoint=checkpoint)
-        self.ext2 = ConvExtractor(checkpoint=checkpoint)
+        self.ext1 = ConvExtractor(checkpoint=checkpoint, device=device)
+        self.ext2 = ConvExtractor(checkpoint=checkpoint, device=device)
         self.fc = nn.Linear(2*128, 128)
         self.dropout = nn.Dropout(p=0.4)
 
@@ -56,12 +56,12 @@ class LocalNet(nn.Module):
         return x
 
 class CoLGA(nn.Module):
-    def __init__(self, checkpoint: str, window_size: int = 7):
+    def __init__(self, checkpoint: str, window_size: int = 7, device: torch.device):
         super(CoLGA, self).__init__()
         self.window_size = window_size
-        self.globalNet = self.getGlobalNet(checkpoint)
+        self.globalNet = self.getGlobalNet(checkpoint).to(device)
         self.dropout_global = nn.Dropout(p=0.1, inplace=False)
-        self.localNet = LocalNet(checkpoint=checkpoint)
+        self.localNet = LocalNet(checkpoint=checkpoint, device=device)
         self.fc = nn.Linear(self.config.hidden_size+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
 
