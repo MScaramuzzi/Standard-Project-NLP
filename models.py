@@ -56,7 +56,7 @@ class LocalNet(nn.Module):
         return x
 
 class CoLGA(nn.Module):
-    def __init__(self, checkpoint: str, window_size: int = 7, device: torch.device):
+    def __init__(self, checkpoint: str, device: torch.device, window_size: int = 7):
         super(CoLGA, self).__init__()
         self.window_size = window_size
         self.globalNet = self.getGlobalNet(checkpoint).to(device)
