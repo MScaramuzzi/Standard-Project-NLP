@@ -59,6 +59,7 @@ class CoLGA(nn.Module):
     def __init__(self, checkpoint: str, device: torch.device, window_size: int = 7):
         super(CoLGA, self).__init__()
         self.window_size = window_size
+        self.device = device
         self.globalNet = self.getGlobalNet(checkpoint).to(device)
         self.dropout_global = nn.Dropout(p=0.1, inplace=False)
         self.localNet = LocalNet(checkpoint=checkpoint, device=device)
@@ -73,7 +74,7 @@ class CoLGA(nn.Module):
     
     def forward(self, x):
         x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).pooler_output))
-        x_local = torch.empty((0))
+        x_local = torch.empty((0)).to(device)
         for i in range(self.window_size):
             x_emo = {
                 'input_ids': x['emotions_utterances']['input_ids'][:,i,:],
