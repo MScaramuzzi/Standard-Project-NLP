@@ -47,9 +47,8 @@ class LocalNet(nn.Module):
         self.dropout = nn.Dropout(p=0.4)
 
     def forward(self, x1, x2):
-        x1 = F.relu(self.ext1(x1))      #
-        x2 = F.relu(self.ext2(x2))      #
-        x = torch.cat((x1, x2), dim=0)  # later merge x1 and x2 here directly to avoid memory consumption?
+        x = torch.cat((F.relu(self.ext1(x1)),
+                       F.relu(self.ext2(x2))), dim=0)
         x = self.fc(x)
         x = self.dropout(x)
 
@@ -75,7 +74,7 @@ class CoLGA(nn.Module):
         return model
     
     def forward(self, x):
-        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text'])))
+        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).logits))
         x_local = torch.empty((0))
         for i in range(self.window_size):
             x_emo = {
