@@ -14,7 +14,7 @@ from transformers import AutoModel, AutoModelForSequenceClassification, AutoConf
 class ConvExtractor(nn.Module):
     def __init__(self, checkpoint: str, device: torch.device):
         super(ConvExtractor, self).__init__()
-        self.embedder = AutoModel.from_pretrained(checkpoint)
+        self.embedder = AutoModel.from_pretrained(checkpoint).to(device)
         self.embedder_config = AutoConfig.from_pretrained(checkpoint)
         self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3).to(device)
         self.conv1 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 4)
