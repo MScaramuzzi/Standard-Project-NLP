@@ -24,7 +24,7 @@ class ConvExtractor(nn.Module):
         self.fc = nn.Linear(256*22, 128)  # FIXME input_neurons = (input_length - kernel_size + 2 * padding) / stride + 1
 
     def forward(self, x):
-        x = self.embedder(x)    # 100
+        x = self.embedder(**x)    # 100
         x = self.input_conv(x)  # 98
         x = self.conv1(x)       # 95
         x = self.conv2(x)       # 91
@@ -49,7 +49,7 @@ class LocalNet(nn.Module):
     def forward(self, x1, x2):
         x1 = F.relu(self.ext1(x1))      #
         x2 = F.relu(self.ext2(x2))      #
-        x = torch.cat((x1, x2), dim=1)  # later merge x1 and x2 here directly to avoid memory consumption?
+        x = torch.cat((x1, x2), dim=0)  # later merge x1 and x2 here directly to avoid memory consumption?
         x = self.fc(x)
         x = self.dropout(x)
 
@@ -68,20 +68,28 @@ class CoLGA(nn.Module):
     def getGlobalNet(self, checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
         config = AutoConfig.from_pretrained(checkpoint)
-
+        
         # customize classifier
         model.classifier = nn.Linear(config.hidden_size, config.hidden_size)
         
         return model
     
     def forward(self, x):
-        x_global = F.relu(self.dropout_global(self.globalNet(x['suggestive_text'])))
+        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text'])))
+        x_local = torch.empty((0))
         for i in range(self.window_size):
-            local_out = F.relu(self.localNet((x['emotion'], x['utterance']),        # check how you tokenize before
-                                      (x['speaker'], x['utterance'])))
-            x_local = torch.cat((x_local, local_out), dim=1)
+            x_emo = {
+                'input_ids': x['emotions_utterances']['input_ids'][i],
+                'attention_mask': x['emotions_utterances']['attention_mask'][i]
+            }
+            x_spe = {
+                'input_ids': x['speakers_utterances']['input_ids'][i],
+                'attention_mask': x['speakers_utterances']['attention_mask'][i]
+            }
+            local_out = F.relu(self.localNet(x_emo, x_spe))
+            x_local = torch.cat((x_local, local_out), dim=0)
             
-        x = torch.cat((x_global, x_local), dim=1)
+        x = torch.cat((x_global, x_local), dim=0)
         x = self.fc(x)
         x = self.dropout(x)
 
