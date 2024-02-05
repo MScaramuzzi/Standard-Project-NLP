@@ -86,10 +86,6 @@ class CoLGA(nn.Module):
             local_out = F.relu(self.localNet(x_emo, x_spe))
             x_local = torch.cat((x_local, local_out), dim=1)
 
-        shape_global = x_global.shape
-        shape_local = x_local.shape
-        print(f'{shape_global = }')
-        print(f'{shape_local = }')
         x = torch.cat((x_global, x_local), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
@@ -188,3 +184,28 @@ def focal_loss(alpha: Optional[Sequence] = None,
     fl = FocalLoss(alpha = alpha, gamma = gamma, reduction = reduction)
     
     return fl
+
+
+class MultiLabelFocalLoss(nn.Module):
+    def __init__(self, alpha: Optional[Tensor] = None, gamma: float = 0., reduction: str = 'mean'):
+        super().__init__()
+        self._alpha = alpha
+        self._gamma = gamma
+        self._reduction = reduction
+
+        if reduction not in ('mean', 'sum', 'none'):
+            raise ValueError('Reduction must be one of: "mean", "sum", "none".')
+
+    def forward(self, input: Tensor, target: Tensor) -> Tensor:
+        input_sigmoid = torch.sigmoid(input)
+        
+        bce_loss = F.binary_cross_entropy(input_sigmoid, target, reduction='none')
+        pt = torch.where(target == 1, input_sigmoid, 1 - input_sigmoid)
+        focal_loss = self._alpha * (1 - pt) ** self._gamma * bce_loss
+
+        if self._reduction == 'mean':
+            return focal_loss.mean()
+        elif self._reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
