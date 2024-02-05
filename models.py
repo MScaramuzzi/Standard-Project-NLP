@@ -88,7 +88,11 @@ class CoLGA(nn.Module):
             }
             local_out = F.relu(self.localNet(x_emo, x_spe))
             x_local = torch.cat((x_local, local_out), dim=1)
-            
+
+        shape_global = x_global.shape
+        shape_local = x_local.shape
+        print(f'{shape_global = }')
+        print(f'{shape_local = }')
         x = torch.cat((x_global, x_local), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
