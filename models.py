@@ -66,16 +66,13 @@ class CoLGA(nn.Module):
         self.dropout = nn.Dropout(p=0.4)
 
     def getGlobalNet(self, checkpoint: str):
-        model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+        model = AutoModel.from_pretrained(checkpoint)
         self.config = AutoConfig.from_pretrained(checkpoint)
-        
-        # customize classifier
-        model.classifier = nn.Linear(self.config.hidden_size, self.config.hidden_size)
         
         return model
     
     def forward(self, x):
-        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).logits))
+        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).pooler_output))
         x_local = torch.empty((0))
         for i in range(self.window_size):
             x_emo = {
