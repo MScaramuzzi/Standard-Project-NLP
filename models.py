@@ -74,7 +74,7 @@ class CoLGA(nn.Module):
     
     def forward(self, x):
         x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).pooler_output))
-        x_local = torch.empty((0)).to(device)
+        x_local = torch.empty((0)).to(self.device)
         for i in range(self.window_size):
             x_emo = {
                 'input_ids': x['emotions_utterances']['input_ids'][:,i,:],
