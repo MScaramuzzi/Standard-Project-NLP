@@ -49,7 +49,7 @@ class LocalNet(nn.Module):
 
     def forward(self, x1, x2):
         x = torch.cat((F.relu(self.ext1(x1)),
-                       F.relu(self.ext2(x2))), dim=0)
+                       F.relu(self.ext2(x2))), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
 
@@ -62,15 +62,15 @@ class CoLGA(nn.Module):
         self.globalNet = self.getGlobalNet(checkpoint)
         self.dropout_global = nn.Dropout(p=0.1, inplace=False)
         self.localNet = LocalNet(checkpoint=checkpoint)
-        self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
+        self.fc = nn.Linear(self.config.hidden_size+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
 
     def getGlobalNet(self, checkpoint: str):
         model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
-        config = AutoConfig.from_pretrained(checkpoint)
+        self.config = AutoConfig.from_pretrained(checkpoint)
         
         # customize classifier
-        model.classifier = nn.Linear(config.hidden_size, config.hidden_size)
+        model.classifier = nn.Linear(self.config.hidden_size, self.config.hidden_size)
         
         return model
     
@@ -87,9 +87,9 @@ class CoLGA(nn.Module):
                 'attention_mask': x['speakers_utterances']['attention_mask'][i]
             }
             local_out = F.relu(self.localNet(x_emo, x_spe))
-            x_local = torch.cat((x_local, local_out), dim=0)
+            x_local = torch.cat((x_local, local_out), dim=1)
             
-        x = torch.cat((x_global, x_local), dim=0)
+        x = torch.cat((x_global, x_local), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
 
