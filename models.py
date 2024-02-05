@@ -188,9 +188,9 @@ def focal_loss(alpha: Optional[Sequence] = None,
 
 
 class MultiLabelFocalLoss(nn.Module):
-    def __init__(self, alpha: Optional[Tensor] = None, gamma: float = 0., reduction: str = 'mean'):
+    def __init__(self, alpha: Optional[Tensor] = None, gamma: float = 0., reduction: str = 'mean', device: torch.device = 'cuda'):
         super().__init__()
-        self._alpha = alpha
+        self._alpha = alpha.to(device) if alpha is not None else None
         self._gamma = gamma
         self._reduction = reduction
 
