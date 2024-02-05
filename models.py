@@ -25,7 +25,8 @@ class ConvExtractor(nn.Module):
 
     def forward(self, x):
         x = self.embedder(**x)    # 100
-        x = self.input_conv(x.last_hidden_state)  # 98
+        x = x.last_hidden_state.permute(0, 2, 1)
+        x = self.input_conv(x)  # 98
         x = self.conv1(x)       # 95
         x = self.conv2(x)       # 91
         x = self.pool(x)        # 45
