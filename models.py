@@ -21,7 +21,7 @@ class ConvExtractor(nn.Module):
         self.conv2 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 5)
         self.pool = nn.MaxPool1d(kernel_size = 2)
         self.conv3 = nn.Conv1d(in_channels = 128, out_channels = 256, kernel_size = 2)
-        self.fc = nn.Linear(256*22, 128)  # FIXME input_neurons = (input_length - kernel_size + 2 * padding) / stride + 1
+        self.fc = None # will be dynamically initialized in forward()
 
     def forward(self, x):
         x = self.embedder(**x)    # 100
@@ -35,6 +35,11 @@ class ConvExtractor(nn.Module):
         x = self.pool(x)        # 22
         x = F.relu(x)
         x = x.reshape(x.shape[0], -1)   # flatten
+
+        # Dynamically define the fully connected layer
+        if self.fc is None:
+            self.fc = nn.Linear(x.size(1), 128).to(x.device)
+        
         x = self.fc(x)
 
         return x
