@@ -93,9 +93,10 @@ def get_repeated_instances(df: pd.DataFrame)-> tuple[list[str], list[int], list[
             count_list.append(count)
             indices.append(idx)
     np_indices = np.array(indices) - 1 # avoid mispositioning of indexes       
+    
     return diags,count_list,np_indices
 
-# # Function to calculate number of words of each utterance in a dialogue
+# Function to compute number of words of each utterance in a dialogue
 def get_lengths(utterances):
     return np.array([len(utterance.split()) for utterance in utterances])
 
