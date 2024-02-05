@@ -78,15 +78,13 @@ class CoLGA(nn.Module):
         x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).logits))
         x_local = torch.empty((0))
         for i in range(self.window_size):
-            shape = x['emotions_utterances']['input_ids'].shape
-            print(f'in loop: {shape}')
             x_emo = {
-                'input_ids': x['emotions_utterances']['input_ids'][i],
-                'attention_mask': x['emotions_utterances']['attention_mask'][i]
+                'input_ids': x['emotions_utterances']['input_ids'][:,i,:],
+                'attention_mask': x['emotions_utterances']['attention_mask'][:,i,:]
             }
             x_spe = {
-                'input_ids': x['speakers_utterances']['input_ids'][i],
-                'attention_mask': x['speakers_utterances']['attention_mask'][i]
+                'input_ids': x['speakers_utterances']['input_ids'][:,i,:],
+                'attention_mask': x['speakers_utterances']['attention_mask'][:,i,:]
             }
             local_out = F.relu(self.localNet(x_emo, x_spe))
             x_local = torch.cat((x_local, local_out), dim=1)
