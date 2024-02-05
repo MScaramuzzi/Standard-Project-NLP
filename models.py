@@ -198,10 +198,10 @@ class MultiLabelFocalLoss(nn.Module):
             raise ValueError('Reduction must be one of: "mean", "sum", "none".')
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        input_sigmoid = torch.sigmoid(input)
-        
-        bce_loss = F.binary_cross_entropy(input_sigmoid, target, reduction='none')
-        pt = torch.where(target == 1, input_sigmoid, 1 - input_sigmoid)
+        bce_loss = F.binary_cross_entropy_with_logits(input, target, reduction='none')
+
+        pt = torch.sigmoid(input).detach()
+        pt = torch.where(target == 1, pt, 1 - pt)
         focal_loss = self._alpha * (1 - pt) ** self._gamma * bce_loss
 
         if self._reduction == 'mean':
