@@ -12,19 +12,20 @@ from transformers import AutoModel, AutoModelForSequenceClassification, AutoConf
 # UTTERANCE_LEVEL SIZE = 128
 
 class ConvExtractor(nn.Module):
-    def __init__(self, checkpoint: str):
+    def __init__(self, checkpoint: str, device: torch.device):
         super(ConvExtractor, self).__init__()
-        self.embedder = AutoModel.from_pretrained(checkpoint)
+        self.embedder = AutoModel.from_pretrained(checkpoint).to(device)
         self.embedder_config = AutoConfig.from_pretrained(checkpoint)
-        self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3)
+        self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3).to(device)
         self.conv1 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 4)
         self.conv2 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 5)
         self.pool = nn.MaxPool1d(kernel_size = 2)
         self.conv3 = nn.Conv1d(in_channels = 128, out_channels = 256, kernel_size = 2)
-        self.fc = nn.Linear(256*22, 128)  # FIXME input_neurons = (input_length - kernel_size + 2 * padding) / stride + 1
+        self.fc = None # will be dynamically initialized in forward()
 
     def forward(self, x):
         x = self.embedder(**x)    # 100
+        x = x.last_hidden_state.permute(0, 2, 1)
         x = self.input_conv(x)  # 98
         x = self.conv1(x)       # 95
         x = self.conv2(x)       # 91
@@ -34,62 +35,64 @@ class ConvExtractor(nn.Module):
         x = self.pool(x)        # 22
         x = F.relu(x)
         x = x.reshape(x.shape[0], -1)   # flatten
+
+        # Dynamically define the fully connected layer
+        if self.fc is None:
+            self.fc = nn.Linear(x.size(1), 128).to(x.device)
+        
         x = self.fc(x)
 
         return x
 
 class LocalNet(nn.Module):
-    def __init__(self, checkpoint: str):
+    def __init__(self, checkpoint: str, device: torch.device):
         super(LocalNet, self).__init__()
-        self.ext1 = ConvExtractor(checkpoint=checkpoint)
-        self.ext2 = ConvExtractor(checkpoint=checkpoint)
+        self.ext1 = ConvExtractor(checkpoint=checkpoint, device=device)
+        self.ext2 = ConvExtractor(checkpoint=checkpoint, device=device)
         self.fc = nn.Linear(2*128, 128)
         self.dropout = nn.Dropout(p=0.4)
 
     def forward(self, x1, x2):
-        x1 = F.relu(self.ext1(x1))      #
-        x2 = F.relu(self.ext2(x2))      #
-        x = torch.cat((x1, x2), dim=0)  # later merge x1 and x2 here directly to avoid memory consumption?
+        x = torch.cat((F.relu(self.ext1(x1)),
+                       F.relu(self.ext2(x2))), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
 
         return x
 
 class CoLGA(nn.Module):
-    def __init__(self, checkpoint: str, window_size: int = 7):
+    def __init__(self, checkpoint: str, device: torch.device, window_size: int = 7):
         super(CoLGA, self).__init__()
         self.window_size = window_size
-        self.globalNet = self.getGlobalNet(checkpoint)
+        self.device = device
+        self.globalNet = self.getGlobalNet(checkpoint).to(device)
         self.dropout_global = nn.Dropout(p=0.1, inplace=False)
-        self.localNet = LocalNet(checkpoint=checkpoint)
-        self.fc = nn.Linear(768+(self.window_size*128), self.window_size)
+        self.localNet = LocalNet(checkpoint=checkpoint, device=device)
+        self.fc = nn.Linear(self.config.hidden_size+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
 
     def getGlobalNet(self, checkpoint: str):
-        model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
-        config = AutoConfig.from_pretrained(checkpoint)
-        
-        # customize classifier
-        model.classifier = nn.Linear(config.hidden_size, config.hidden_size)
+        model = AutoModel.from_pretrained(checkpoint)
+        self.config = AutoConfig.from_pretrained(checkpoint)
         
         return model
     
     def forward(self, x):
-        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text'])))
-        x_local = torch.empty((0))
+        x_global = F.relu(self.dropout_global(self.globalNet(**x['suggestive_text']).pooler_output))
+        x_local = torch.empty((0)).to(self.device)
         for i in range(self.window_size):
             x_emo = {
-                'input_ids': x['emotions_utterances']['input_ids'][i],
-                'attention_mask': x['emotions_utterances']['attention_mask'][i]
+                'input_ids': x['emotions_utterances']['input_ids'][:,i,:],
+                'attention_mask': x['emotions_utterances']['attention_mask'][:,i,:]
             }
             x_spe = {
-                'input_ids': x['speakers_utterances']['input_ids'][i],
-                'attention_mask': x['speakers_utterances']['attention_mask'][i]
+                'input_ids': x['speakers_utterances']['input_ids'][:,i,:],
+                'attention_mask': x['speakers_utterances']['attention_mask'][:,i,:]
             }
             local_out = F.relu(self.localNet(x_emo, x_spe))
-            x_local = torch.cat((x_local, local_out), dim=0)
-            
-        x = torch.cat((x_global, x_local), dim=0)
+            x_local = torch.cat((x_local, local_out), dim=1)
+
+        x = torch.cat((x_global, x_local), dim=1)
         x = self.fc(x)
         x = self.dropout(x)
 
@@ -187,3 +190,28 @@ def focal_loss(alpha: Optional[Sequence] = None,
     fl = FocalLoss(alpha = alpha, gamma = gamma, reduction = reduction)
     
     return fl
+
+
+class MultiLabelFocalLoss(nn.Module):
+    def __init__(self, alpha: Optional[Tensor] = None, gamma: float = 0., reduction: str = 'mean', device: torch.device = 'cuda'):
+        super().__init__()
+        self._alpha = alpha.to(device) if alpha is not None else None
+        self._gamma = gamma
+        self._reduction = reduction
+
+        if reduction not in ('mean', 'sum', 'none'):
+            raise ValueError('Reduction must be one of: "mean", "sum", "none".')
+
+    def forward(self, input: Tensor, target: Tensor) -> Tensor:
+        bce_loss = F.binary_cross_entropy_with_logits(input, target, reduction='none')
+
+        pt = torch.sigmoid(input).detach()
+        pt = torch.where(target == 1, pt, 1 - pt)
+        focal_loss = self._alpha * (1 - pt) ** self._gamma * bce_loss
+
+        if self._reduction == 'mean':
+            return focal_loss.mean()
+        elif self._reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
