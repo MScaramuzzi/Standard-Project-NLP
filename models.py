@@ -17,10 +17,12 @@ class ConvExtractor(nn.Module):
         self.embedder = AutoModel.from_pretrained(checkpoint).to(device)
         self.embedder_config = AutoConfig.from_pretrained(checkpoint)
         self.input_conv = nn.Conv1d(in_channels = self.embedder_config.hidden_size, out_channels = 128, kernel_size = 3).to(device)
+        self.bn1 = nn.BatchNorm1d(128)
         self.conv1 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 4)
         self.conv2 = nn.Conv1d(in_channels = 128, out_channels = 128, kernel_size = 5)
         self.pool = nn.MaxPool1d(kernel_size = 2)
         self.conv3 = nn.Conv1d(in_channels = 128, out_channels = 256, kernel_size = 2)
+        self.bn2 = nn.BatchNorm1d(256)
         self.fc = None # will be dynamically initialized in forward()
 
     def forward(self, x):
@@ -30,9 +32,11 @@ class ConvExtractor(nn.Module):
         x = self.conv1(x)       # 95
         x = self.conv2(x)       # 91
         x = self.pool(x)        # 45
+        x = self.bn1(x)
         x = F.relu(x)           
         x = self.conv3(x)       # 44
         x = self.pool(x)        # 22
+        x = self.bn2(x)
         x = F.relu(x)
         x = x.reshape(x.shape[0], -1)   # flatten
 
