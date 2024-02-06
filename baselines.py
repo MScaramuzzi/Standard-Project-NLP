@@ -126,6 +126,8 @@ def train_baseline_bert(model_name: str, task: str,
                         compute_metrics, num_labels,
                         id2label=None, label2id=None):
     
+    # id2label and label2id default to None and are put at the end because they are not needed for baselines efr
+
     # model_name = 'fine_tuned_bert | full_bert
     # task = 'ERC' or 'EFR'
     ensure_reproducibility(seed) # setting the seed
