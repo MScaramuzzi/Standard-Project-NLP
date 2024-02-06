@@ -111,6 +111,164 @@ def get_utterance_lenghts(df: pd.DataFrame)-> np.array:
     lengths_array = np.concatenate(df_copy['lengths_array'].values) # get the flattened array with all the utterance lengths
     return lengths_array
 
+def suggestiveText(df: pd.DataFrame, task: str = 'ERC'):
+    if task not in ['ERC', 'EFR']:
+        print('Task not accepted. Please choose between ERC and EFR.')
+        return
+
+    df = df.copy()
+    speakers = [s for s in df['speakers']]
+    utterances = [u for u in df['utterances']]
+    suggestive_texts = []
+
+    if task == 'ERC':
+        for spkrs,utts in zip(speakers, utterances):
+            queries_list = []
+            for focus in range(len(utts)):
+                sugg = f''
+                for i,(s,u) in enumerate(zip(spkrs,utts)):
+                    if i == focus:
+                        sugg += f'<s>{s} <mask> says: {u}</s> '
+                    else:
+                        sugg += f'{s} says: {u} '
+
+                queries_list.append(sugg)
+            suggestive_texts.append(queries_list)
+    else:
+        emotions = [e for e in df['emotions']]
+
+        emotions_adverbs = {
+            "neutral": '',
+            "anger": 'angrily ',
+            "disgust": 'disgustingly ',
+            "fear": 'fearfully ',
+            "joy": 'joyfully ',
+            "surprise": 'surprisingly ',
+            "sadness": 'sadly '
+        }
+
+        for spkrs, emos, utts in zip(speakers, emotions, utterances):
+            sugg = f''
+            for i,(s,e,u) in enumerate(zip(spkrs, emos, utts)):
+                if i == len(utts)-1:
+                    sugg += f'<s>{s} {emotions_adverbs[e]}says: {u}</s> '
+                else:
+                    sugg += f'{s} {emotions_adverbs[e]}says: {u} '
+
+            suggestive_texts.append(sugg)
+
+    df['suggestive_texts'] = suggestive_texts
+
+    if task == 'ERC':
+        return df.drop(columns=['dialogue_id','speakers','emotions','utterances','triggers'])
+    else:
+        return df.drop(columns=['dialogue_id','emotions_num'])
+
+
+def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tok_max_len: int = 350):
+    input_ids = torch.empty((0,tok_max_len), dtype=torch.int)
+    attention_mask = torch.empty((0, tok_max_len), dtype=torch.int)
+
+    for suggestive_texts in examples['suggestive_texts']:
+        for sugg in suggestive_texts:
+            tokens = tokenizer.tokenize(sugg)
+            ids = tokenizer.convert_tokens_to_ids(tokens)
+
+            # Truncate to max length
+            if len(ids) > tok_max_len:
+                ids = ids[:tok_max_len]
+
+            # Pad to max length
+            if len(ids) < tok_max_len:
+                ids = ids + [tokenizer.pad_token_id] * (tok_max_len - len(ids))
+
+            # Create attention mask
+            attention = [1 if token_id != tokenizer.pad_token_id else 0 for token_id in ids]
+
+            input_ids = torch.cat((input_ids, torch.tensor(ids).unsqueeze(0)), dim = 0)
+            attention_mask = torch.cat((attention_mask, torch.tensor(attention).unsqueeze(0)), dim=0)
+
+        labels = torch.tensor(np.concatenate(examples['emotions_num']))
+
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels
+    }
+
+
+def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tok_max_len: int = 250, sequence_len: int = 50, window_size: int = 7):
+    speakers_utterances_input_ids = []
+    speakers_utterances_attention_mask = []
+    emotions_utterances_input_ids = []
+    emotions_utterances_attention_mask = []
+    st_input_ids = torch.empty((0,tok_max_len), dtype=torch.int)
+    st_attention_mask = torch.empty((0,tok_max_len), dtype=torch.int)
+
+    padding_tensor = torch.tensor([tokenizer.pad_token_id]*sequence_len).unsqueeze(0)
+    attention_padding = torch.tensor([0]*sequence_len).unsqueeze(0)
+
+    for (speakers, emotions, utterances) in zip(examples['speakers'], examples['emotions'], examples['utterances']):
+        spk_utt_combined = [s + ": " + u for (s,u) in zip(speakers[-window_size:],utterances[-window_size:])]
+        emo_utt_combined = [e + ": " + u for (e,u) in zip(emotions[-window_size:],utterances[-window_size:])]
+
+        spk_utt_encodings = tokenizer(spk_utt_combined, padding="max_length", truncation=True, max_length=sequence_len, return_tensors='pt')
+        emo_utt_encodings = tokenizer(emo_utt_combined, padding="max_length", truncation=True, max_length=sequence_len, return_tensors='pt')
+
+        # Padding sequences shorter than window_size
+        if len(spk_utt_encodings['input_ids']) < window_size:
+          for i in range(window_size - len(spk_utt_encodings['input_ids'])):
+            spk_utt_encodings['input_ids'] = torch.cat((spk_utt_encodings['input_ids'], padding_tensor), dim=0)
+            spk_utt_encodings['attention_mask'] = torch.cat((spk_utt_encodings['attention_mask'], attention_padding), dim=0)
+
+            emo_utt_encodings['input_ids'] = torch.cat((emo_utt_encodings['input_ids'], padding_tensor), dim=0)
+            emo_utt_encodings['attention_mask'] = torch.cat((emo_utt_encodings['attention_mask'], attention_padding), dim=0)
+
+        speakers_utterances_input_ids.append(spk_utt_encodings['input_ids'].tolist())
+        speakers_utterances_attention_mask.append(spk_utt_encodings['attention_mask'].tolist())
+
+        emotions_utterances_input_ids.append(emo_utt_encodings['input_ids'].tolist())
+        emotions_utterances_attention_mask.append(emo_utt_encodings['attention_mask'].tolist())
+
+    for suggestive_text in examples['suggestive_texts']:
+        tokens = tokenizer.tokenize(suggestive_text)
+        ids = tokenizer.convert_tokens_to_ids(tokens)
+
+        # Truncate to max length
+        if len(ids) > tok_max_len:
+            ids = ids[-tok_max_len:]  # Keeps the last tok_max_len tokens
+
+        # Pad to max length
+        if len(ids) < tok_max_len:
+            ids = ids + [tokenizer.pad_token_id] * (tok_max_len - len(ids))
+
+        # Create attention mask
+        attention = [1 if token_id != tokenizer.pad_token_id else 0 for token_id in ids]
+
+        st_input_ids = torch.cat((st_input_ids, torch.tensor(ids).unsqueeze(0)), dim = 0)
+        st_attention_mask = torch.cat((st_attention_mask, torch.tensor(attention).unsqueeze(0)), dim=0)
+
+    labels_batch = {k: examples[k] for k in examples.keys() if k in pos_trig}
+
+    # create numpy array of shape (batch_size, num_labels)
+    labels_matrix = np.zeros((len(examples['suggestive_texts']), len(pos_trig)))
+
+    # fill numpy array
+    for idx, label in enumerate(pos_trig):
+        labels_matrix[:, idx] = labels_batch[label]
+
+    labels = torch.tensor(labels_matrix.tolist())
+
+    return {
+        "speakers_utterances_input_ids": speakers_utterances_input_ids,
+        "speakers_utterances_attention_mask": speakers_utterances_attention_mask,
+        "emotions_utterances_input_ids": emotions_utterances_input_ids,
+        "emotions_utterances_attention_mask": emotions_utterances_attention_mask,
+        "suggestive_text_ids": st_input_ids,
+        "suggestive_text_mask": st_attention_mask,
+        "labels": labels
+    }
+
 ############################### VISUALIZATIONS ######################################################
 
 def plot_dist_instances(count_instances_tr,count_instances_val,count_inst_list=None,splits=["Train","Validation","Test"],test=False):
