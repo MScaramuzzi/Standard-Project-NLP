@@ -119,15 +119,13 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_val:pd.DataFrame, seeds: li
             print('***'*20,'\n\n')
 
 
-def train_baseline_bert(model_name: str, task: str, 
+def train_baselines_bert(model_name: str, task: str, 
                         checkpoint: str, args: TrainingArguments,
                         train_set, val_set,
                         tokenizer, seed: int,
                         compute_metrics, num_labels,
-                        id2label=None, label2id=None):
+                        id2label, label2id):
     
-    # id2label and label2id default to None and are put at the end because they are not needed for baselines efr
-
     # model_name = 'fine_tuned_bert | full_bert
     # task = 'ERC' or 'EFR'
     ensure_reproducibility(seed) # setting the seed
@@ -152,7 +150,10 @@ def train_baseline_bert(model_name: str, task: str,
                                                             label2id=label2id)
         
     else: # task is EFR
-        model = AutoModelForSequenceClassification.from_pretrained(checkpoint,num_labels=num_labels) # EFR is binary classification on triggers i.e. num_labels = 1
+        model = AutoModelForSequenceClassification.from_pretrained(checkpoint,num_labels=num_labels,
+                                                                   id2label=id2label,
+                                                                   label2id=label2id
+                                                                   ) # EFR is binary classification on triggers i.e. num_labels = 1
 
     if model_name == 'full_bert':
         for param in model.parameters(): # unfreeze all bert weights to perform the fine-tuning on the whole architecture

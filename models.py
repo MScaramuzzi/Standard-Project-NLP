@@ -8,6 +8,11 @@ from torch import Tensor
 from torch.utils.data import DataLoader 
 import transformers
 from transformers import AutoModel, AutoModelForSequenceClassification, AutoConfig
+from utils import ensure_reproducibility
+from transformers import TrainingArguments, Trainer
+import os
+from typing import Dict
+
 
 # UTTERANCE_LEVEL SIZE = 128
 
@@ -220,3 +225,108 @@ class MultiLabelFocalLoss(nn.Module):
             return focal_loss.sum()
         else:
             return focal_loss
+
+class CustomScheduler:
+    def __init__(self, optimizer, num_warmup_steps, num_training_steps, min_lr):
+        self.optimizer = optimizer
+        self.num_warmup_steps = num_warmup_steps
+        self.num_training_steps = num_training_steps
+        self.min_lr = min_lr
+        self.current_step = 0
+        self.last_lr = 0
+
+    def step(self):
+        if self.current_step < self.num_warmup_steps:
+            lr = (self.optimizer.defaults['lr'] / self.num_warmup_steps) * self.current_step
+        elif self.current_step < self.num_training_steps:
+            lr = ((self.optimizer.defaults['lr'] - self.min_lr) / (self.num_training_steps - self.num_warmup_steps)) * (self.num_training_steps - self.current_step) + self.min_lr
+        else:
+            lr = self.min_lr
+
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+
+        self.last_lr = lr
+        self.current_step += 1
+
+    def get_last_lr(self):
+        return [self.last_lr]
+
+    def state_dict(self):
+        return {}
+
+class FocalLossTrainer(Trainer):
+    def __init__(self, *args, focal_loss, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.focal_loss = focal_loss
+
+    # might remove it
+    def log(self, logs: Dict[str, float]) -> None:
+        logs["learning_rate"] = self._get_learning_rate()*pow(10, 6)
+        super().log(logs)
+
+    def create_optimizer_and_scheduler(self, num_training_steps):
+        self.optimizer = torch.optim.AdamW(self.model.parameters(),
+                                           lr=self.args.learning_rate,
+                                           weight_decay=self.args.weight_decay)
+
+        self.lr_scheduler = CustomScheduler(self.optimizer,
+                                            num_warmup_steps = len(self.get_train_dataloader()),
+                                            num_training_steps=num_training_steps//2, # num_training_steps halved for steeper decaying
+                                            min_lr = self.args.learning_rate/10)
+
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        # Compute Focal Loss
+        loss = self.focal_loss(logits, labels)
+        return (loss, outputs) if return_outputs else loss
+
+
+def train_roberta(checkpoint: str, args: TrainingArguments,
+                train_set, val_set, class_weigths,
+                tokenizer, seed: int,
+                compute_metrics, num_labels,
+                id2label, label2id):
+    
+    ensure_reproducibility(seed) # setting the seed
+    TABLE = '-' # outputting constant
+
+    # Setting output directories
+    out_dir = f"./train/roberta_ERC_{seed}"
+    os.makedirs(out_dir, exist_ok=True)
+    args.output_dir = out_dir
+
+    args.seed = seed # set seed for hugging face Training Arguments
+
+    model = AutoModelForSequenceClassification.from_pretrained(checkpoint,
+                                                        num_labels=num_labels,
+                                                        id2label=id2label,
+                                                        label2id=label2id)
+    
+    to_freeze = 16
+    for layer in model.roberta.encoder.layer[to_freeze:]: # unfreeze layers after to_freeze
+        for param in layer.parameters():
+            param.requires_grad = True
+
+    focal_trainer = FocalLossTrainer( # Instantiate our custom trainer which overloads the default Trainer of Hugging face, this was needed to add the focal loss function.
+            model = model,
+            args = args,
+            train_dataset = train_set,
+            eval_dataset = val_set,
+            tokenizer = tokenizer,
+            focal_loss = focal_loss(alpha=class_weigths, gamma=2, reduction = 'mean'), 
+            compute_metrics = compute_metrics
+        )
+            
+    
+    # outputting utilities
+    print()
+    print()
+    print(f'{TABLE*20} MODEL: ROBERTA | TASK: ERC | SEED: {seed} {TABLE*20}') # we will use this model only for ERC task
+    print()
+    focal_trainer.train()
+    print()
+
+    pass
