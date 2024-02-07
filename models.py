@@ -284,11 +284,10 @@ class FocalLossTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
-def train_roberta(checkpoint: str, args: TrainingArguments,
+def train_roberta(model, args: TrainingArguments,
                 train_set, val_set, class_weigths,
                 tokenizer, seed: int,
-                compute_metrics, num_labels,
-                id2label, label2id):
+                compute_metrics):
     
     ensure_reproducibility(seed) # setting the seed
     TABLE = '-' # outputting constant
@@ -300,11 +299,6 @@ def train_roberta(checkpoint: str, args: TrainingArguments,
 
     args.seed = seed # set seed for hugging face Training Arguments
 
-    model = AutoModelForSequenceClassification.from_pretrained(checkpoint,
-                                                        num_labels=num_labels,
-                                                        id2label=id2label,
-                                                        label2id=label2id)
-    
     to_freeze = 16
     for layer in model.roberta.encoder.layer[to_freeze:]: # unfreeze layers after to_freeze
         for param in layer.parameters():
@@ -320,7 +314,6 @@ def train_roberta(checkpoint: str, args: TrainingArguments,
             compute_metrics = compute_metrics
         )
             
-    
     # outputting utilities
     print()
     print()
