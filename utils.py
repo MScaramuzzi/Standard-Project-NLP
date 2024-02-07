@@ -197,7 +197,11 @@ def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tokenizer, tok_max_len
     }
 
 # FIXME: THIS
-def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tok_max_len: int = 250, 
+# train_st_efr_set = train_st_efr_dataset.map(ut.preprocess_SuggestiveText_EFR, batched=True, fn_kwargs={'tokenizer': roberta_tokenizer,
+    #'pos_trig' : pos_trig}, remove_columns=train_st_efr_dataset.column_names)
+
+def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tokenizer, 
+                                  pos_trig, tok_max_len: int = 250,
                                   sequence_len: int = 50, window_size: int = 7):
     speakers_utterances_input_ids = []
     speakers_utterances_attention_mask = []
@@ -206,15 +210,15 @@ def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tok_max_len: int = 250
     st_input_ids = torch.empty((0,tok_max_len), dtype=torch.int)
     st_attention_mask = torch.empty((0,tok_max_len), dtype=torch.int)
 
-    padding_tensor = torch.tensor([roberta_tokenizer.pad_token_id]*sequence_len).unsqueeze(0)
+    padding_tensor = torch.tensor([tokenizer.pad_token_id]*sequence_len).unsqueeze(0)
     attention_padding = torch.tensor([0]*sequence_len).unsqueeze(0)
 
     for (speakers, emotions, utterances) in zip(examples['speakers'], examples['emotions'], examples['utterances']):
         spk_utt_combined = [s + ": " + u for (s,u) in zip(speakers[-window_size:],utterances[-window_size:])]
         emo_utt_combined = [e + ": " + u for (e,u) in zip(emotions[-window_size:],utterances[-window_size:])]
 
-        spk_utt_encodings = roberta_tokenizer(spk_utt_combined, padding="max_length", truncation=True, max_length=sequence_len, return_tensors='pt')
-        emo_utt_encodings = roberta_tokenizer(emo_utt_combined, padding="max_length", truncation=True, max_length=sequence_len, return_tensors='pt')
+        spk_utt_encodings = tokenizer(spk_utt_combined, padding="max_length", truncation=True, max_length=sequence_len, return_tensors='pt')
+        emo_utt_encodings = tokenizer(emo_utt_combined, padding="max_length", truncation=True, max_length=sequence_len, return_tensors='pt')
 
         # Padding sequences shorter than window_size
         if len(spk_utt_encodings['input_ids']) < window_size:
@@ -232,8 +236,8 @@ def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tok_max_len: int = 250
         emotions_utterances_attention_mask.append(emo_utt_encodings['attention_mask'].tolist())
 
     for suggestive_text in examples['suggestive_texts']:
-        tokens = roberta_tokenizer.tokenize(suggestive_text)
-        ids = roberta_tokenizer.convert_tokens_to_ids(tokens)
+        tokens = tokenizer.tokenize(suggestive_text)
+        ids = tokenizer.convert_tokens_to_ids(tokens)
 
         # Truncate to max length
         if len(ids) > tok_max_len:
@@ -241,10 +245,10 @@ def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tok_max_len: int = 250
 
         # Pad to max length
         if len(ids) < tok_max_len:
-            ids = ids + [roberta_tokenizer.pad_token_id] * (tok_max_len - len(ids))
+            ids = ids + [tokenizer.pad_token_id] * (tok_max_len - len(ids))
 
         # Create attention mask
-        attention = [1 if token_id != roberta_tokenizer.pad_token_id else 0 for token_id in ids]
+        attention = [1 if token_id != tokenizer.pad_token_id else 0 for token_id in ids]
 
         st_input_ids = torch.cat((st_input_ids, torch.tensor(ids).unsqueeze(0)), dim = 0)
         st_attention_mask = torch.cat((st_attention_mask, torch.tensor(attention).unsqueeze(0)), dim=0)
