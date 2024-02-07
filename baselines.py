@@ -132,7 +132,7 @@ def train_baseline_bert(model_name: str, task: str,
     TABLE = '-' # outputting constant
 
     # Setting output directories
-    out_dir = f"./train/{model_name}_{task}_{seed}"
+    out_dir = f"./trained_models/{model_name}_{task}_{seed}"
     os.makedirs(out_dir, exist_ok=True)
     args.output_dir = out_dir
 
