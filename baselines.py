@@ -119,7 +119,7 @@ def train_baselines_dummy(df_train: pd.DataFrame, df_val:pd.DataFrame, seeds: li
             print('***'*20,'\n\n')
 
 
-def train_baselines_bert(model_name: str, task: str, 
+def train_baseline_bert(model_name: str, task: str, 
                         checkpoint: str, args: TrainingArguments,
                         train_set, val_set,
                         tokenizer, seed: int,
