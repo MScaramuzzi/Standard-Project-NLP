@@ -74,6 +74,7 @@ class CoLGA(nn.Module):
         self.localNet = LocalNet(checkpoint=checkpoint, device=device)
         self.fc = nn.Linear(self.config.hidden_size+(self.window_size*128), self.window_size)
         self.dropout = nn.Dropout(p=0.4)
+      
 
     def getGlobalNet(self, checkpoint: str):
         model = AutoModel.from_pretrained(checkpoint)

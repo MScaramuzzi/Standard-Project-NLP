@@ -169,7 +169,7 @@ def plot_num_utterances_dialogue(df: pd.DataFrame, median_color: str):
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
     axes[0].yaxis.set_major_formatter(formatter)
 
-    axes[0].grid(axis='y', linestyle='--')
+    axes[0].grid(axis='y')
 
     # II. Plot boxplot on the second subplot
     sns.boxplot(y='nb_utterences', data=df, fill=False, 
@@ -284,7 +284,8 @@ def plot_num_triggers_diag(trigger_array: np.array):
     ones_count_per_subarray = trigger_array.apply(lambda x: sum(1 for i in x if i == 1.0))
     plt.figure(figsize=(8,6),dpi=105)
     # Create a histogram with relative percentages
-    sns.histplot(data=ones_count_per_subarray, binwidth=1, stat='percent',binrange=(-0.5, max(ones_count_per_subarray) + 0.5))
+    sns.histplot(data=ones_count_per_subarray, binwidth=1, 
+                 stat='percent',binrange=(-0.5, max(ones_count_per_subarray) + 0.5))
 
     # Set axis label and ticks
     plt.xlabel('Number of Ones')
