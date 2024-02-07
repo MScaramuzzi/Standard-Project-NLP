@@ -284,11 +284,13 @@ class FocalLossTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
-def train_roberta(model, args: TrainingArguments,
+def train_roberta(checkpoint: str, args: TrainingArguments,
                 train_set, val_set, class_weigths,
                 tokenizer, seed: int,
-                compute_metrics):
+                compute_metrics, num_labels,
+                id2label, label2id):
     
+    ##### *-------- BEGIN UTILITIES SECTION  --------* ######
     ensure_reproducibility(seed) # setting the seed
     TABLE = '-' # outputting constant
 
@@ -298,28 +300,48 @@ def train_roberta(model, args: TrainingArguments,
     args.output_dir = out_dir
 
     args.seed = seed # set seed for hugging face Training Arguments
+    ##### *-------- END UTILITIES SECTION  --------* ######
 
+    ##### *-------- BEGIN MODEL DEFINITION SECTION  --------* ######
+    model = AutoModelForSequenceClassification.from_pretrained(checkpoint,
+                                                        num_labels=num_labels,
+                                                        id2label=id2label,
+                                                        label2id=label2id)
+    
     to_freeze = 16
     for layer in model.roberta.encoder.layer[to_freeze:]: # unfreeze layers after to_freeze
         for param in layer.parameters():
             param.requires_grad = True
 
-    focal_trainer = FocalLossTrainer( # Instantiate our custom trainer which overloads the default Trainer of Hugging face, this was needed to add the focal loss function.
-            model = model,
-            args = args,
-            train_dataset = train_set,
-            eval_dataset = val_set,
-            tokenizer = tokenizer,
-            focal_loss = focal_loss(alpha=class_weigths, gamma=2, reduction = 'mean'), 
-            compute_metrics = compute_metrics
-        )
-            
-    # outputting utilities
+    # Define special tokens for performing suggestive text
+    special_tokens_dict = {'bos_token': '<s>', 'eos_token': '</s>', 'mask_token': '<mask>'}
+    num_added_toks = tokenizer.add_special_tokens(special_tokens_dict)
+
+    # Resize the token embeddings so as to include the special added tokens for suggestive text
+    model.resize_token_embeddings(len(tokenizer))
+
+    ##### *-------- BEGIN OUTPUTTING UTILITIES SECTION  --------* ######
     print()
     print()
     print(f'{TABLE*20} MODEL: ROBERTA | TASK: ERC | SEED: {seed} {TABLE*20}') # we will use this model only for ERC task
     print()
+    ##### *-------- END UTILITIES SECTION  --------* ######
+
+    ##### *-------- BEGIN TRAINING MODEL SECTION  --------* ######
+    focal_trainer = FocalLossTrainer( # Instantiate our custom trainer which overloads the default Trainer of Hugging face, this was needed to add the focal loss
+        model = model,
+        args = args,
+        train_dataset = train_set,
+        eval_dataset = val_set,
+        tokenizer = tokenizer,
+        focal_loss = focal_loss(alpha=class_weigths, gamma=2, reduction = 'mean'), 
+        compute_metrics = compute_metrics
+    )
+
+    # Train the model
     focal_trainer.train()
+    ##### *-------- END TRAINING MODEL SECTION  --------* ######
+    
     print()
 
     pass
