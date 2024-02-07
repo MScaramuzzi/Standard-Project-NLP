@@ -165,14 +165,14 @@ def suggestiveText(df: pd.DataFrame, task: str = 'ERC'):
         return df.drop(columns=['dialogue_id','emotions_num'])
 
 
-def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tok_max_len: int = 350):
+def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tokenizer, tok_max_len: int = 350):
     input_ids = torch.empty((0,tok_max_len), dtype=torch.int)
     attention_mask = torch.empty((0, tok_max_len), dtype=torch.int)
 
     for suggestive_texts in examples['suggestive_texts']:
         for sugg in suggestive_texts:
-            tokens = roberta_tokenizer.tokenize(sugg)
-            ids = roberta_tokenizer.convert_tokens_to_ids(tokens)
+            tokens = tokenizer.tokenize(sugg)
+            ids = tokenizer.convert_tokens_to_ids(tokens)
 
             # Truncate to max length
             if len(ids) > tok_max_len:
@@ -180,10 +180,10 @@ def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tok_max_len: int = 350
 
             # Pad to max length
             if len(ids) < tok_max_len:
-                ids = ids + [roberta_tokenizer.pad_token_id] * (tok_max_len - len(ids))
+                ids = ids + [tokenizer.pad_token_id] * (tok_max_len - len(ids))
 
             # Create attention mask
-            attention = [1 if token_id != roberta_tokenizer.pad_token_id else 0 for token_id in ids]
+            attention = [1 if token_id != tokenizer.pad_token_id else 0 for token_id in ids]
 
             input_ids = torch.cat((input_ids, torch.tensor(ids).unsqueeze(0)), dim = 0)
             attention_mask = torch.cat((attention_mask, torch.tensor(attention).unsqueeze(0)), dim=0)
