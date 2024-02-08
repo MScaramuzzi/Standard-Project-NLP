@@ -146,7 +146,7 @@ def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str
     plt.show()
 
 # 2.2.2 Distribution of utterances in dialogues
-def plot_num_utterances_dialogue(df: pd.DataFrame, median_color: str):
+def plot_num_utterances_dial(df: pd.DataFrame, median_color: str):
     """This function makes two plots side by side:
     1) an histogram for the number of utterances in a dialogue
     2) the boxplot for the number of utterances in a dialogue

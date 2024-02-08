@@ -15,7 +15,8 @@ from matplotlib.ticker import FuncFormatter
 from transformers import EvalPrediction
 
 
-#### *--------------  BEGIN GENERIC UTILS SECTION --------------*
+#region #### *--------------  BEGIN GENERIC UTILS SECTION --------------*
+
 # setting the seed
 def ensure_reproducibility(seed) -> None:
     random.seed(seed)
@@ -115,10 +116,12 @@ def get_utterance_lenghts(df: pd.DataFrame)-> np.array:
     lengths_array = np.concatenate(df_copy['lengths_array'].values) # get the flattened array with all the utterance lengths
     return lengths_array
 
-#### *-------------- END GENERIC UTILS SECTION --------------*
+#endregion # *-------------- END GENERIC UTILS SECTION --------------*
 
 
+# region 
 #### *-------------- BEGIN METRICS HELPER SECTION --------------*
+
 
 def linear_scale_array(values, min_new=0, max_new=1):
     """This function performs a liner rescaling EFR predictions to the interval [0,1],
@@ -141,29 +144,67 @@ def decod_pred_efr(preds: EvalPrediction):
 
 
 #### *-------------- END METRICS HELPER SECTION --------------*
+# endregion
 
 
-##### *-------------- GIUSEPPE (preprocessing)  --------------*
+
+# region 
+##### *-------------- Preprocessing/Data handling section  --------------*
+
+def get_trigger_labels(df: pd.DataFrame, num_pos_trig: int, pos_trig: list[str]) -> pd.DataFrame:
+    """ 
+    This function adds columns which will store the label for each single trigger in any given dialogue
+    
+
+    Args:
+        df (pd.DataFrame): original dataframe with no additional trigger columns
+        num_pos_trig (int): number of trigger columns to add
+        pos_trig (list[str]): list that contains the names of the trigger columns to be added
+
+    Returns:
+        pd.DataFrame: Dataframe consisting o
+    """    
+    df = df.copy()
+
+    # reverse the the list of triggers inside the trigger column in the dataframe
+    reversed_triggers = [entry[-num_pos_trig:] for entry in df['triggers']]
+
+    padded_reversed_triggers = []
+    for elem in reversed_triggers: # loop over each element in the reversed_trigger
+        # pad_size is computed as the number of zeros to add in order to reach the prescribed length (that is num_pos_trig which in our case is equal to 7)
+        pad_size = num_pos_trig - len(elem) # if len(elem) == num_pos_trig or len(elem) < num_pos_trig  then no padding is added
+        padding = [0.0]
+        padded_reversed_triggers.append(padding * pad_size + elem) # use + operation between lists to concatenate them to the requested length
+
+    df_pos_triggers = pd.DataFrame(padded_reversed_triggers, columns=pos_trig) # DataFrame of trigger labels in descendent order
+    df = df.join(df_pos_triggers) # check if 'emotions_num' will be necessary later on
+
+    return df
+
 
 
 def suggestiveText(df: pd.DataFrame, task: str = 'ERC'):
+    """ This function augments the dataset by adding an adverb that indicates the emotion of the speaker.
+    Then the adverb is masked and the model will need to predict the masked token. This is done to exploit Masked language modeling
+    through which BERT-like are trained. Thus making more apt for our task. 
+    """    
     if task not in ['ERC', 'EFR']:
         print('Task not accepted. Please choose between ERC and EFR.')
         return
 
     df = df.copy()
-    speakers = [s for s in df['speakers']]
-    utterances = [u for u in df['utterances']]
+    speakers = [s for s in df['speakers']]              # retrieve list of speakers  
+    utterances = [u for u in df['utterances']]          # retrieve list of utterances
     suggestive_texts = []
 
     if task == 'ERC':
-        for spkrs,utts in zip(speakers, utterances):
+        for spkrs,utts in zip(speakers, utterances):    # loop through speaker utterance pair
             queries_list = []
             for focus in range(len(utts)):
                 sugg = f''
                 for i,(s,u) in enumerate(zip(spkrs,utts)):
                     if i == focus:
-                        sugg += f'<s>{s} <mask> says: {u}</s> '
+                        sugg += f'<s>{s} <mask> says: {u}</s> ' # add speaker + masking + utterance if we are focusing on that utterance
                     else:
                         sugg += f'{s} says: {u} '
 
@@ -172,6 +213,7 @@ def suggestiveText(df: pd.DataFrame, task: str = 'ERC'):
     else:
         emotions = [e for e in df['emotions']]
 
+        # define dictionary containing adverbs associated with emotions. Note that neutral is equivalent with no adverb given that it works as a 'negative' label
         emotions_adverbs = {
             "neutral": '',
             "anger": 'angrily ',
@@ -194,6 +236,7 @@ def suggestiveText(df: pd.DataFrame, task: str = 'ERC'):
 
     df['suggestive_texts'] = suggestive_texts
 
+    # keep relevant columns for each task
     if task == 'ERC':
         return df.drop(columns=['dialogue_id','speakers','emotions','utterances','triggers'])
     else:
@@ -201,6 +244,7 @@ def suggestiveText(df: pd.DataFrame, task: str = 'ERC'):
 
 
 def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tokenizer, tok_max_len: int = 350):
+    # Define custom preprocess to pass to the map function 
     input_ids = torch.empty((0,tok_max_len), dtype=torch.int)
     attention_mask = torch.empty((0, tok_max_len), dtype=torch.int)
 
@@ -238,6 +282,7 @@ def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tokenizer, tok_max_len
 def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tokenizer, 
                                   pos_trig, tok_max_len: int = 250,
                                   sequence_len: int = 50, window_size: int = 7):
+    
     speakers_utterances_input_ids = []
     speakers_utterances_attention_mask = []
     emotions_utterances_input_ids = []
@@ -308,6 +353,5 @@ def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tokenizer,
         "suggestive_text_mask": st_attention_mask,
         "labels": labels
     }
-
-
 ##### *-------------- GIUSEPPE  --------------*
+# endregion
