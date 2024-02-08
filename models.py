@@ -13,6 +13,27 @@ from transformers import TrainingArguments, Trainer
 import os
 from typing import Dict
 
+def colgaCollator(batch):
+    speakers_utterances = {
+        'input_ids': torch.stack([torch.tensor(item['speakers_utterances_input_ids']) for item in batch]),
+        'attention_mask': torch.stack([torch.tensor(item['speakers_utterances_attention_mask']) for item in batch])
+    }
+    emotions_utterances = {
+        'input_ids': torch.stack([torch.tensor(item['emotions_utterances_input_ids']) for item in batch]),
+        'attention_mask': torch.stack([torch.tensor(item['emotions_utterances_attention_mask']) for item in batch])
+    }
+    suggestive_text = {
+        'input_ids': torch.stack([torch.tensor(item['suggestive_text_ids']) for item in batch]),
+        'attention_mask': torch.stack([torch.tensor(item['suggestive_text_mask']) for item in batch])
+    }
+    labels = torch.stack([torch.tensor(item['labels']) for item in batch])
+
+    return {
+        'speakers_utterances': speakers_utterances,
+        'emotions_utterances': emotions_utterances,
+        'suggestive_text': suggestive_text,
+        'labels': labels
+    }
 
 # UTTERANCE_LEVEL SIZE = 128
 
