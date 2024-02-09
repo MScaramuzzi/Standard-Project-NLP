@@ -116,12 +116,23 @@ def get_utterance_lenghts(df: pd.DataFrame)-> np.array:
     lengths_array = np.concatenate(df_copy['lengths_array'].values) # get the flattened array with all the utterance lengths
     return lengths_array
 
+def get_triggers_frequencies(df : pd.DataFrame()):
+    # This function returns the dictionary with the frequency of each trigger label 
+    trig_freq_dict = {}
+    df_efr = get_trigger_labels(df)
+    # Iterate over each column in the DataFrame
+    for column in df_efr.filter(like='trigger_'):
+        # Compute the value counts for the column
+        value_counts = df_efr[column].value_counts()
+        # Add the value counts to the dictionary
+        trig_freq_dict[column] = value_counts.get(1)   # Get the count of 1, default to 0 if not present
+    return trig_freq_dict
+
 #endregion # *-------------- END GENERIC UTILS SECTION --------------*
 
 
 # region 
 #### *-------------- BEGIN METRICS HELPER SECTION --------------*
-
 
 def linear_scale_array(values, min_new=0, max_new=1):
     """This function performs a liner rescaling EFR predictions to the interval [0,1],
@@ -142,10 +153,17 @@ def decod_pred_efr(preds: EvalPrediction):
     y_pred[np.where(probs >= 0.5)] = 1
     return y_pred
 
+def decod_pred_efr_multilabel(preds):
+    probs = linear_scale_array(preds)
+    # next, use the threshold to turn them into integer predictions
+    y_pred = np.zeros(probs.shape)
+    y_pred[np.where(probs >= 0.5)] = 1
+    return y_pred
+
+
 
 #### *-------------- END METRICS HELPER SECTION --------------*
 # endregion
-
 
 
 # region 
@@ -353,5 +371,5 @@ def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tokenizer,
         "suggestive_text_mask": st_attention_mask,
         "labels": labels
     }
-##### *-------------- GIUSEPPE  --------------*
+##### *-------------- Preprocessing/Data handling section  --------------*
 # endregion

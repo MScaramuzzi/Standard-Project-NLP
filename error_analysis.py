@@ -41,8 +41,8 @@ unroll_f1s_efr = {}
 f1s_efr = {}
 
 
-def infer_baseline_dummy(task, df_train, df_test, target_labels,
-                         seed: int, baselies):
+def infer_baseline_dummy(task, df_train, df_test, 
+                         target_labels, seed: int):
     # plotting utilities
     SECTION_SEPARATOR = '---'
     MODEL_SEPARATOR = '*'
