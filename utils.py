@@ -116,10 +116,21 @@ def get_utterance_lenghts(df: pd.DataFrame)-> np.array:
     lengths_array = np.concatenate(df_copy['lengths_array'].values) # get the flattened array with all the utterance lengths
     return lengths_array
 
-def get_triggers_frequencies(df : pd.DataFrame()):
+def get_emotions_freq(df_unique: pd.DataFrame):
+    emotions_max_diag = df_unique['emotions']
+    emotions_arr =  np.concatenate(np.array(emotions_max_diag))
+
+    emotion_freq_df =  pd.DataFrame(pd.Series(emotions_arr)
+                                        .value_counts(),columns=['Count'])\
+                                        .reset_index().rename(columns={"index":"Emotion"}) # get the count for each frequency
+    emotion_freq_dict = dict(zip(emotion_freq_df['Emotion'], emotion_freq_df['Count']))
+    return emotion_freq_dict
+
+
+def get_triggers_frequencies(df : pd.DataFrame(),NUM_TRIGGERS,pos_trig):
     # This function returns the dictionary with the frequency of each trigger label 
     trig_freq_dict = {}
-    df_efr = get_trigger_labels(df)
+    df_efr = get_trigger_labels(df,NUM_TRIGGERS,pos_trig)
     # Iterate over each column in the DataFrame
     for column in df_efr.filter(like='trigger_'):
         # Compute the value counts for the column
@@ -293,9 +304,6 @@ def preprocess_SuggestiveText_ERC(examples: pd.DataFrame, tokenizer, tok_max_len
         "labels": labels
     }
 
-# FIXME: THIS
-# train_st_efr_set = train_st_efr_dataset.map(ut.preprocess_SuggestiveText_EFR, batched=True, fn_kwargs={'tokenizer': roberta_tokenizer,
-    #'pos_trig' : pos_trig}, remove_columns=train_st_efr_dataset.column_names)
 
 def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tokenizer, 
                                   pos_trig, tok_max_len: int = 250,
