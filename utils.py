@@ -127,7 +127,7 @@ def get_emotions_freq(df_unique: pd.DataFrame):
     return emotion_freq_dict
 
 
-def get_triggers_frequencies(df : pd.DataFrame(),NUM_TRIGGERS,pos_trig):
+def get_triggers_frequencies(df:pd.DataFrame, NUM_TRIGGERS,pos_trig):
     # This function returns the dictionary with the frequency of each trigger label 
     trig_freq_dict = {}
     df_efr = get_trigger_labels(df,NUM_TRIGGERS,pos_trig)

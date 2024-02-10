@@ -31,7 +31,7 @@ def get_errors_df(confusion_matrix, labels) -> pd.DataFrame:
     return pd.DataFrame(results, columns=['true', 'predicted', 'errors'])
 
 
-
+# region 
 #### *---------- BEGIN INFER SECTION ----------*
 # ERC
 unroll_f1s_erc = {}
@@ -106,14 +106,13 @@ def add_measure_to_dict(report, model_type, task, f1s: dict, unroll_f1s: dict, l
     f1s[f'{model_name}'] = f1s_targets
 
 def ordering_dict(ordered_dict, id2label):
+    # This function is needed to correctly order the label in the confusion matrices
     reordered_dict = {}
     for k in ordered_dict.keys():
         for i in range(len(ordered_dict)):
             if id2label[i] == k:
                 reordered_dict[i] = k
     return reordered_dict
-
-
 
 def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
                     test_set, tokenizer, id2label: dict,
@@ -264,3 +263,4 @@ def plot_f1_w_distribution(df_train: pd.DataFrame, task: str, f1s: dict, unroll_
     ax2.tick_params(axis='y', labelcolor='royalblue')
 
     plt.show()
+# endregion
