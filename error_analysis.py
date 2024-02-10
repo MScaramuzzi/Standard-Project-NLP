@@ -179,9 +179,9 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
         conf_matrix = confusion_matrix(true_label, preds_label)
 
         if task.upper() == 'ERC':
-            fig, ax = plt.subplots(figsize=(12, 8))
+            _, ax = plt.subplots(figsize=(12, 8))
         else:
-            fig, ax = plt.subplots(figsize=(5, 4))
+            _, ax = plt.subplots(figsize=(5, 4))
 
         sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=id2label.values(), yticklabels=id2label.values(), ax=ax)
 
