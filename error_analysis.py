@@ -6,7 +6,7 @@ import pprint
 import warnings
 
 from baselines import baselines_ERC, baselines_EFR
-from utils import decod_pred_efr
+from utils import decod_pred_efr, restructuring_flat_preds
 
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
@@ -159,7 +159,7 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
         unroll_f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_macro_f1']
 
         # Sequence f1
-        if task.upper() == 'ERC'
+        if task.upper() == 'ERC':
             all_predictions_dialog, all_labels_dialog = restructuring_flat_preds(predictions.predictions, structuring_df, 'emotion_num')
             sequence_f1s[f'{model_type_str} {task.upper()}'] = compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
         else:
