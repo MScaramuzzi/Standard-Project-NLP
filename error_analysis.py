@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 import pprint
 import warnings
+import utils as ut
 
 from baselines import baselines_ERC, baselines_EFR
 from utils import decod_pred_efr, restructuring_flat_preds
@@ -41,7 +42,7 @@ def get_errors_df(confusion_matrix, labels) -> pd.DataFrame:
 # f1s_efr = {}
 
 
-def infer_baseline_dummy(task, df_train, df_test, 
+def infer_baseline_dummy(task, df_train, df_test, structuring_df, 
                          target_labels, seed: int):
     # plotting utilities
     SECTION_SEPARATOR = '---'
@@ -49,6 +50,10 @@ def infer_baseline_dummy(task, df_train, df_test,
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+
+        f1s = {}
+        unroll_f1s = {}
+        sequence_f1s = {}
 
         # Dummy baselines
         if task not in ['ERC', 'EFR']:
@@ -80,30 +85,43 @@ def infer_baseline_dummy(task, df_train, df_test,
 
         uni_report_dict = classification_report(y_true, uni_preds, target_names=target_labels, output_dict=True)
         maj_report_dict = classification_report(y_true, maj_preds, target_names=target_labels, output_dict=True)
-    return uni_report_dict, maj_report_dict # from these dictionaries we will later extract the following variables f1s, unroll_f1s, sequence_f1s
 
+        reports_dict = {'uni': uni_report_dict, 'maj': maj_report_dict}
 
-def add_measure_to_dict(report, model_type, task, f1s: dict, unroll_f1s: dict, lbl_target: list):
-    if task not in ['ERC', 'EFR']:
-        print('Task not accepted. Please choose between ERC and EFR.')
-        return
-    if model_type not in ['uniform', 'majority']:
-        print('Model type not accepted. Please choose between uniform and majority.')
-        return
+        for key, report in reports_dict.items():
 
-    if model_type == 'uniform':
-        model_name = f'UNIFORM {task}'
-    else:
-        model_name = f'MAJORITY {task}'
+            if key == 'uni':
+                model_name = f'UNIFORM {task}'
+            else:
+                model_name = f'MAJORITY {task}'
+            
+            f1s_targets = {}
 
-    f1s_targets = {}
+            for name, measures_dict in report.items():
 
-    for name, measures_dict in report.items():
-        if name in lbl_target:
-            f1s_targets[name] = measures_dict['f1-score']
-        if name == 'macro avg':
-            unroll_f1s[f'{model_name}'] = measures_dict['f1-score']
-    f1s[f'{model_name}'] = f1s_targets
+                if name in target_labels:
+                    f1s_targets[name] = measures_dict['f1-score']
+                if name == 'macro avg':
+                    unroll_f1s[f'{model_name}'] = measures_dict['f1-score']
+            f1s[f'{model_name}'] = f1s_targets
+            
+        if task.upper() == 'ERC':
+            # uniform
+            all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(uni_preds, structuring_df, 'emotions_num')
+            sequence_f1s['UNIFORM ERC'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            # majority
+            all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(maj_preds, structuring_df, 'emotions_num')
+            sequence_f1s['MAJORITY ERC'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+        
+        else:
+            # uniform
+            all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(uni_preds, structuring_df, 'triggers')
+            sequence_f1s['UNIFORM EFR'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            # majority
+            all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(maj_preds, structuring_df, 'triggers')
+            sequence_f1s['MAJORITY EFR'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+
+    return f1s, unroll_f1s, sequence_f1s
 
 def ordering_dict(ordered_dict, id2label):
     # This function is needed to correctly order the label in the confusion matrices
@@ -153,6 +171,11 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
 
         predictions = trainer.predict(test_set)
 
+        if task.upper() == 'ERC':
+            preds = np.argmax(predictions.predictions, axis=1)
+        else:
+            preds = ut.decod_pred_efr(predictions.predictions)
+
         f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_f1s']
         id2label = ordering_dict(predictions.metrics['test_f1s'], id2label)
 
@@ -160,11 +183,11 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
 
         # Sequence f1
         if task.upper() == 'ERC':
-            all_predictions_dialog, all_labels_dialog = restructuring_flat_preds(predictions.predictions, structuring_df, 'emotion_num')
-            sequence_f1s[f'{model_type_str} {task.upper()}'] = compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(preds, structuring_df, 'emotions_num')
+            sequence_f1s[f'{model_type_str} {task.upper()}'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
         else:
-            all_predictions_dialog, all_labels_dialog = restructuring_flat_preds(predictions.predictions, structuring_df, 'triggers')
-            sequence_f1s[f'{model_type_str} {task.upper()}'] = compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(preds, structuring_df, 'triggers')
+            sequence_f1s[f'{model_type_str} {task.upper()}'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
         
         
         print()
@@ -172,18 +195,12 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
         print()
         print('F1s:')
         pprint.pprint(f'{predictions.metrics["test_f1s"]}')
-        print(f'Unrolled sequence f1: {predictions.metrics["test_macro_f1"]}')
+        print(f'Unrolled sequence f1: {round(predictions.metrics["test_macro_f1"], 3)}')
         print()
-        print(f'Sequence f1: {sequence_f1s[f'{model_type_str} {task.upper()}']}')
+        print(f'Sequence f1: {round(sequence_f1s[f"{model_type_str} {task.upper()}"], 3)}')
         print()
         print(f'{SEED_SEPARATOR*30}')
         print()
-
-        
-        if task.upper() == 'ERC':
-            preds = np.argmax(predictions.predictions, axis=1)
-        else:
-            preds = decod_pred_efr(predictions.predictions)
 
         preds_label = [id2label[i] for i in preds]
         true_label = [id2label[i] for i in test_set['labels']]
@@ -205,7 +222,7 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
 
         # get worst/best predictions counting the number of wrongly predicted labels
         errors_df = get_errors_df(conf_matrix, labels=id2label.values())
-        errors_df = errors_df.sort_values('errors', ascending=False)
+        errors_df = errors_df.sort_values('errors', ascending=False, ignore_index=True)
 
         print()
         print(f'{SEED_SEPARATOR*30}')
@@ -217,7 +234,6 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
         ###### END BERT BASELINE SECTION #######
 
         return f1s, unroll_f1s, sequence_f1s
-
 #### *---------- END INFER SECTION ----------*
 
 
