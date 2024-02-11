@@ -150,10 +150,7 @@ def train_baseline_bert(model_name: str, task: str,
                                                             label2id=label2id)
         
     else: # task is EFR
-        model = AutoModelForSequenceClassification.from_pretrained(checkpoint,num_labels=num_labels,
-                                                                   id2label=id2label,
-                                                                   label2id=label2id
-                                                                   ) # EFR is binary classification on triggers i.e. num_labels = 1
+        model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=num_labels) # EFR is binary classification on triggers i.e. num_labels = 1
 
     if model_name == 'full_bert':
         for param in model.parameters(): # unfreeze all bert weights to perform the fine-tuning on the whole architecture
