@@ -7,7 +7,7 @@ import warnings
 import utils as ut
 
 from baselines import baselines_ERC, baselines_EFR
-from utils import decod_pred_efr
+from utils import decod_pred_efr, restructuring_flat_preds
 
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
@@ -34,12 +34,12 @@ def get_errors_df(confusion_matrix, labels) -> pd.DataFrame:
 
 # region 
 #### *---------- BEGIN INFER SECTION ----------*
-# ERC
-unroll_f1s_erc = {}
-f1s_erc = {}
-# EFR
-unroll_f1s_efr = {}
-f1s_efr = {}
+# # ERC
+# unroll_f1s_erc = {}
+# f1s_erc = {}
+# # EFR
+# unroll_f1s_efr = {}
+# f1s_efr = {}
 
 
 def infer_baseline_dummy(task, df_train, df_test, structuring_df, 
