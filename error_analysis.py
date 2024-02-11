@@ -33,12 +33,12 @@ def get_errors_df(confusion_matrix, labels) -> pd.DataFrame:
 
 # region 
 #### *---------- BEGIN INFER SECTION ----------*
-# ERC
-unroll_f1s_erc = {}
-f1s_erc = {}
-# EFR
-unroll_f1s_efr = {}
-f1s_efr = {}
+# # ERC
+# unroll_f1s_erc = {}
+# f1s_erc = {}
+# # EFR
+# unroll_f1s_efr = {}
+# f1s_efr = {}
 
 
 def infer_baseline_dummy(task, df_train, df_test, 
