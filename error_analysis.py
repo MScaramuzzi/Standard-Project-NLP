@@ -115,7 +115,7 @@ def ordering_dict(ordered_dict, id2label):
     return reordered_dict
 
 def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
-                    test_set, tokenizer, id2label: dict,
+                    test_set, structuring_df, tokenizer, id2label: dict,
                     compute_metrics, seed: int, ckpt):
 
     # model_type: fine_tuned_bert | full_bert
@@ -153,22 +153,33 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
 
         predictions = trainer.predict(test_set)
 
+        f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_f1s']
+        id2label = ordering_dict(predictions.metrics['test_f1s'], id2label)
+
+        unroll_f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_macro_f1']
+
+        # Sequence f1
+        if task.upper() == 'ERC'
+            all_predictions_dialog, all_labels_dialog = restructuring_flat_preds(predictions.predictions, structuring_df, 'emotion_num')
+            sequence_f1s[f'{model_type_str} {task.upper()}'] = compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+        else:
+            all_predictions_dialog, all_labels_dialog = restructuring_flat_preds(predictions.predictions, structuring_df, 'triggers')
+            sequence_f1s[f'{model_type_str} {task.upper()}'] = compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+        
+        
         print()
         print(f'{MODEL_SEPARATOR*20} MODEL: {model_type_str} | TASK: {task.upper()} | SEED: {seed} {MODEL_SEPARATOR*20}')
         print()
         print('F1s:')
         pprint.pprint(f'{predictions.metrics["test_f1s"]}')
-        print(f'Macro f1: {predictions.metrics["test_macro_f1"]}')
+        print(f'Unrolled sequence f1: {predictions.metrics["test_macro_f1"]}')
+        print()
+        print(f'Sequence f1: {sequence_f1s[f'{model_type_str} {task.upper()}']}')
         print()
         print(f'{SEED_SEPARATOR*30}')
         print()
 
-        f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_f1s']
-        id2label = ordering_dict(predictions.metrics['test_f1s'], id2label)
-
-        unroll_f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_macro_f1']
-        # sequence_f1s[f'{model_type_str} {task.upper()}'] = predictions.metrics['test_f1_sequence_avg']
-
+        
         if task.upper() == 'ERC':
             preds = np.argmax(predictions.predictions, axis=1)
         else:
@@ -205,7 +216,7 @@ def infer_bert_like(args: TrainingArguments, model_type:str, task: str,
 
         ###### END BERT BASELINE SECTION #######
 
-        return f1s, unroll_f1s #, sequence_f1s
+        return f1s, unroll_f1s, sequence_f1s
 
 #### *---------- END INFER SECTION ----------*
 
