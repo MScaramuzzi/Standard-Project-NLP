@@ -171,7 +171,27 @@ def decod_pred_efr_multilabel(preds):
     y_pred[np.where(probs >= 0.5)] = 1
     return y_pred
 
+def restructuring_flat_preds(flat_preds: list[int], structuring_df: pd.DataFrame, column_name: str):
+    '''
+    Given the flatten list of predictions and the corresponding column of the dataframe (i.e. the true labels),
+    this function returns the predictions and the labels organized at dialogue level.
+    '''
+    structured_preds, structured_labels = [], []
 
+    for dialog in structuring_df[column_name]:
+        len_dialogue = len(dialog)
+
+        # Retrieve predictions for the current dialogue
+        dialogue_preds = flat_preds[:len_dialogue]
+        structured_preds.append(dialogue_preds)
+
+        # Append dialogue labels
+        structured_labels.append(dialog)
+
+        # Update flat_preds by excluding processed elements
+        flat_preds = flat_preds[len_dialogue:]
+
+    return structured_preds, structured_labels
 
 #### *-------------- END METRICS HELPER SECTION --------------*
 # endregion
