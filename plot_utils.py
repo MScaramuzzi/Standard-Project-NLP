@@ -299,7 +299,9 @@ def plot_num_triggers_diag(trigger_array: np.array):
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.show()
 
+
 def plot_trigger_distance(trigger_array: np.array):
+
 
 #### 2.3 Distribution of emotions across the dataset ####
 
@@ -346,4 +348,65 @@ def plot_trigger_distance(trigger_array: np.array):
 
     plt.grid()
     plt.title('Cumulative distribution of distance between trigger and target utterance')
+    plt.show()
+
+
+from matplotlib.ticker import FuncFormatter
+
+
+def plot_emotion_distr(df_tr,df_val,df_test, model):
+
+    # sns.set_context('paper', font_scale=1.075)
+
+    fig, axes = plt.subplots(figsize=(13.5, 6),dpi=350, nrows=1, ncols=3)
+
+    emotions_tr = df_tr['emotions'] 
+    emotions_arr_tr =  np.concatenate(np.array(emotions_tr))
+
+    emotions_val = df_val['emotions'] 
+    emotions_arr_val =  np.concatenate(np.array(emotions_val))
+
+    emotions_test = df_test['emotions'] 
+    emotions_arr_test =  np.concatenate(np.array(emotions_test))
+
+    df_em_perc_tr = pd.DataFrame(pd.Series(emotions_arr_tr)
+                                       .value_counts(normalize=True),columns=['Percent'])\
+                                       .reset_index().rename(columns={"index":"Emotion"}) # get the count for each frequency
+    df_em_perc_tr['Percent'] = df_em_perc_tr['Percent']*100
+
+    df_em_perc_val =  pd.DataFrame(pd.Series(emotions_arr_val)
+                                       .value_counts(normalize=True),columns=['Percent'])\
+                                       .reset_index().rename(columns={"index":"Emotion"}) # get the count for each frequency
+    df_em_perc_val['Percent'] = df_em_perc_val['Percent']*100
+
+
+    df_em_perc_test =  pd.DataFrame(pd.Series(emotions_arr_test)
+                                       .value_counts(normalize=True),columns=['Percent'])\
+                                       .reset_index().rename(columns={"index":"Emotion"}) # get the count for each frequency
+    df_em_perc_test['Percent'] = df_em_perc_test['Percent']*100
+
+
+    # Extract unique emotion labels from the training DataFrame
+    unique_emotions = df_em_perc_tr['Emotion'].unique()
+    train_palette = sns.color_palette("Set2", len(unique_emotions))
+    color_dict = dict(zip(unique_emotions, train_palette))
+
+    for i, (df_em_perc, title) in enumerate(zip([df_em_perc_tr, df_em_perc_val, df_em_perc_test], ['Train', 'Val', 'Test'])):
+        if i == 0:
+            sns.barplot(data=df_em_perc, x='Emotion', y='Percent', palette=color_dict, legend = True,
+                        edgecolor='white', hue='Emotion', ax=axes[i], order=unique_emotions)
+        else:
+            sns.barplot(data=df_em_perc, x='Emotion', y='Percent', palette=color_dict,
+                        hue='Emotion', legend=False, edgecolor='white',ax=axes[i], order=unique_emotions)
+
+        formatter = FuncFormatter(lambda y, _: f'{int(y)}%')  # add percentage sign next to y ticks
+        axes[i].tick_params(axis='x', labelsize='small')
+        axes[i].yaxis.set_major_formatter(formatter)
+        axes[i].set_yticks(np.arange(0, 50, 5))
+        axes[i].set_title(title)
+        if i !=0:
+            axes[i].set_ylabel('')
+
+    axes[0].legend(loc=1,ncols=2,fontsize=10)
+    fig.suptitle(f"Distribution of emotion labels for {model}", fontsize=14)
     plt.show()
