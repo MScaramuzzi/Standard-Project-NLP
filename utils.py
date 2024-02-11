@@ -193,6 +193,55 @@ def restructuring_flat_preds(flat_preds: list[int], structuring_df: pd.DataFrame
 
     return structured_preds, structured_labels
 
+
+from sklearn.metrics import f1_score
+def compute_sequence_f1(predicted_sequence, true_sequence):
+    """
+    Compute F1-score for predicted and true sequences.
+
+    Args:
+    predicted_sequence (list): Predicted sequence of labels.
+    true_sequence (list): True sequence of labels.
+
+    Returns:
+    f1_score (float): F1-score for the sequences.
+    """
+    # Convert sequences to arrays for f1_score calculation
+    predicted_array = np.array(predicted_sequence)
+    true_array = np.array(true_sequence)
+
+    # Compute F1-score
+    f1 = f1_score(true_array, predicted_array, average='weighted')
+
+    return f1
+
+def compute_sequence_f1_for_dialogues(predicted_dialogues, true_dialogues):
+    """
+    Compute Sequence F1-score for all dialogues.
+
+    Args:
+    predicted_dialogues (list of lists): Predicted sequences of labels for each dialogue.
+    true_dialogues (list of lists): True sequences of labels for each dialogue.
+
+    Returns:
+    average_f1 (float): Average F1-score across all dialogues.
+    """
+    # Initialize list to store F1-scores for each dialogue
+    dialogue_f1_scores = []
+
+    # Iterate over each dialogue
+    for predicted_sequence, true_sequence in zip(predicted_dialogues, true_dialogues):
+        # Compute F1-score for current dialogue
+        f1_dialogue = compute_sequence_f1(predicted_sequence, true_sequence)
+        # Append F1-score to list
+        dialogue_f1_scores.append(f1_dialogue)
+
+    # Calculate average F1-score across all dialogues
+    average_f1 = np.mean(dialogue_f1_scores)
+
+    return average_f1
+
+
 #### *-------------- END METRICS HELPER SECTION --------------*
 # endregion
 
