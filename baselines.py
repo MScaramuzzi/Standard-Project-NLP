@@ -124,7 +124,7 @@ def train_baseline_bert(model_name: str, task: str,
                         train_set, val_set,
                         tokenizer, seed: int,
                         compute_metrics, num_labels,
-                        id2label, label2id):
+                        id2label = None, label2id = None):
     
     # model_name = 'fine_tuned_bert | full_bert
     # task = 'ERC' or 'EFR'
