@@ -258,9 +258,9 @@ def plot_f1_w_distribution(df_train: pd.DataFrame, task: str, f1s: dict, unroll_
     for i, unroll_f1s in enumerate(unroll_f1s.values()):
         plt.scatter(len(id2label), unroll_f1s, color=sc_colors[i], marker=markers[i])
 
-    # # Plot sequence F1-scores
-    # for i, sequence_f1s in enumerate(sequence_f1s.values()):
-    #     plt.scatter(len(id2label), sequence_f1s, color=sc_colors[i], marker=markers[i])
+    # Plot sequence F1-scores
+    for i, sequence_f1s in enumerate(sequence_f1s.values()):
+        plt.scatter(len(id2label), sequence_f1s, color=sc_colors[i], marker=markers[i])
     ax1.set_ylabel('F1-score')
     ax1.set_xticks(np.arange(len(id2label) + 1))
     ax1.set_xticklabels(list(id2label.values()) + ['Mean'])
