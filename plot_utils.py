@@ -410,6 +410,131 @@ def plot_trigger(dfs: list[pd.DataFrame]):
 
 
 
+### Plot trigger per entry
+    
+def plot_triggers_entry(dfs):
+    num_dfs = len(dfs)
+    fig, axes = plt.subplots(figsize=(15, 6), dpi=300, nrows=1, ncols=num_dfs+1) # one more plot for the cumulative
+    titles = ['Train', 'Val','Test']
+    formatter1 = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
+    formatter2 = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
+
+    max_ones_count = 0  # Initialize to find the maximum count of ones across all datasets
+    for i, (df_i, title) in enumerate(zip(dfs,titles[:num_dfs] )):
+
+
+        trigger_array = df_i['triggers']
+        ones_count_per_subarray = trigger_array.apply(lambda x: sum(1 for i in x if i == 1.0))
+        number_of_ones = ones_count_per_subarray.unique()
+        max_ones_count = max(max_ones_count, max(ones_count_per_subarray))  # Update max_ones_count
+
+        # Histogram
+        sns.histplot(data=ones_count_per_subarray, binwidth=1, stat='percent',
+                    edgecolor='white', ax=axes[i], color=COLORS[i])
+        axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_xticks(number_of_ones)  # Set x-axis ticks
+
+        # axes[i].set_xticks(number_of_ones)
+        axes[i].set_xlabel('')
+        axes[i].yaxis.set_major_formatter(formatter1)
+
+        # Cumulative distribution
+        sns.histplot(data=ones_count_per_subarray, binwidth=1, element='step',
+                     fill=False, cumulative=True, lw=1.6,label=f'{title}',
+                     stat='density', ax=axes[i+num_dfs], color=COLORS[i])
+        axes[i+num_dfs].set_title(f'Cumulative distribution of triggers',fontsize='medium')
+        axes[i+num_dfs].set_xticks(number_of_ones)
+        axes[i+num_dfs].yaxis.set_major_formatter(formatter2)
+        axes[i+num_dfs].legend()
+        num_dfs -= 1
+
+    max_x_ticks = max_ones_count + 1
+    for ax in axes:
+        ax.tick_params(axis='both', labelsize='small')
+        if ax == axes[-1]:
+            ax.set_xticks(range(max_x_ticks))  # Set x-axis ticks
+        else:
+            ax.set_yticks(np.arange(0,110,10))  # Set x-axis ticks
+
+        if ax != axes[0]:
+            ax.set_ylabel('')
+
+        if ax != axes[1]:
+            ax.set_xlabel('')
+        else:
+            ax.set_xlabel('Number of triggers',fontsize='small')
+
+
+    plt.tight_layout()
+    plt.suptitle('Number of trigger for each entry in the dataset', size=14, y=1.005)
+    plt.show()
+
+def plot_trigger_distances(dfs: list[pd.DataFrame]):
+    num_dfs = len(dfs)
+    ncols = num_dfs+1
+    fig, axes = plt.subplots(figsize=(ncols*5, 6), dpi=320, nrows=1, ncols=ncols) # one more plot for the cumulative
+    titles = ['Train', 'Val','Test']
+    formatter1 = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
+    formatter2 = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
+
+    max_diffs = 0  # Initialize to find the maximum count of ones across all datasets
+    for i, (df_i, title) in enumerate(zip(dfs,titles[:num_dfs] )):
+
+
+        trigger_array = df_i['triggers']
+        cast_to_array = lambda subarray: np.array(subarray)
+        trigger_np_array = trigger_array.apply(cast_to_array)
+
+
+        one_positions_subarray = trigger_np_array.apply(lambda x: np.where(x == 1)[0])
+        last_positions_subarray = trigger_np_array.apply(lambda x: len(x) - 1)
+        diff_arr = np.concatenate(last_positions_subarray - one_positions_subarray)
+        unique_diff = np.unique(diff_arr)
+        max_diffs = max(max_diffs, max(unique_diff))  # Update max_ones_count
+
+        # Histogram
+        sns.histplot(data=diff_arr, binwidth=1, stat='percent',
+                    edgecolor='white', ax=axes[i], color=COLORS[i])
+        axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_xticks(unique_diff)  # Set x-axis ticks
+
+        # axes[i].set_xticks(number_of_ones)
+        axes[i].set_xlabel('')
+        axes[i].yaxis.set_major_formatter(formatter1)
+
+        # Cumulative distribution
+        sns.histplot(data=diff_arr, binwidth=1, element='step',
+                     fill=False, cumulative=True, lw=1.6,label=f'{title}',
+                     stat='density', ax=axes[i+num_dfs], color=COLORS[i])
+        axes[i+num_dfs].set_title(f'Cumulative distribution of triggers distances',fontsize='medium')
+        # axes[i+num_dfs].set_xticks(unique_diff)
+        axes[i+num_dfs].yaxis.set_major_formatter(formatter2)
+        axes[i+num_dfs].legend()
+        num_dfs -= 1
+
+    max_x_ticks = max_diffs + 1
+    for ax in axes:
+        ax.tick_params(axis='both', labelsize='small')
+        if ax == axes[-1]:
+            ax.set_xticks(range(max_x_ticks))  # Set x-axis ticks
+            ax.set_yticks(np.arange(0,1.1,0.1))  # Set x-axis ticks
+        else:
+            ax.set_yticks(np.arange(0,110,10))  # Set x-axis ticks
+
+
+        if ax != axes[0]:
+            ax.set_ylabel('')
+
+        if ax != axes[1]:
+            ax.set_xlabel('')
+        else:
+            ax.set_xlabel('Distance of triggers',fontsize='small')
+
+
+    plt.tight_layout()
+    plt.suptitle('Distance of trigger from target utterance for each entry in the dataset', size=14, y=1.005)
+    plt.show()
+
 ############################## Labels visualisation ###################################
 
 
