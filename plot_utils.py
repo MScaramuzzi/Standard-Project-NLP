@@ -265,7 +265,7 @@ def plot_num_words_utterance(lengths_array_tr: np.array, lengths_array_val: np.a
         if ax == axes[2]:
             formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks for third plot
             ax.yaxis.set_major_formatter(formatter)
-            axes.set_yticks(np.arange(0,1.1,0.1))
+            ax.set_yticks(np.arange(0,1.1,0.1))
             ax.set_ylabel('')
         else:
             ax.yaxis.set_major_formatter(formatter)
