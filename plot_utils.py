@@ -300,55 +300,117 @@ def plot_num_triggers_diag(trigger_array: np.array):
     plt.show()
 
 
-def plot_trigger_distance(trigger_array: np.array):
+# def plot_trigger_distance(trigger_array: np.array):
 
 
 #### 2.3 Distribution of emotions across the dataset ####
 
-# 2.3.1 TBC
+# 2.3.1 Plot distribution of neutral label with respect to other labels
 
-# 2.3.2 TBC
+def plot_emotion_neutral(dfs: list[pd.DataFrame]):
+    n_dataframes = len(dfs)
+    titles = ['Train','Val','Test']
+    fig, axes = plt.subplots(figsize=(10, 6), dpi=120,nrows=1,ncols=n_dataframes)
+    formatter = FuncFormatter(lambda y, _: f'{int(y)}%')
+
+    # Count the occurrences of 'neutral' and 'other labels'
+#     for i, (df_em_perc, title) in enumerate(zip([df_em_perc_tr, df_em_perc_val, df_em_perc_test], ['Train', 'Val', 'Test'])):
+    for i, (df,title) in enumerate(zip(dfs,titles[:n_dataframes])):
+        df_expl = df.explode('emotions')
+
+        neutral_count = df_expl[df_expl['emotions'] == 'neutral'].shape[0]
+        other_labels_count = df_expl[df_expl['emotions'] != 'neutral'].shape[0]
+        total_count = df_expl.shape[0]
+
+        # Calculate the percentages
+        neutral_percentage = (neutral_count / total_count) * 100
+        other_labels_percentage = (other_labels_count / total_count) * 100
+
+        # Create a DataFrame for the two categories
+        emotion_df = pd.DataFrame({
+            'Emotion': ['Neutral', 'Other labels'],
+            'Percentage': [neutral_percentage, other_labels_percentage]
+        })
 
 
-    """
-    This function plots the distribution of the distances between the trigger and the target utterance
-    """
-    # Use apply and lambda to find one positions (i.e. find where are the trigger utterances) in each array
-    one_positions = trigger_array.apply(lambda x: np.where(x == 1)[0])
+        if i ==0:
+            # Create a bar plot using Seaborn
+            sns.barplot(x='Emotion', y='Percentage', hue='Emotion', width=0.45, legend=True,
+                        data=emotion_df, edgecolor='white',ax=axes[i])
 
-    # Define a lambda function to calculate the distance between each element and the last element
-    calculate_distances = lambda indices, last_index: [last_index - idx for idx in indices]
+        else:
+            sns.barplot(x='Emotion', y='Percentage', hue='Emotion', width=0.45, legend=False,
+                        data=emotion_df, edgecolor='white',ax=axes[i])
+            axes[i].set_ylabel('')
 
-    # Use list comprehension and lambda to create a list of sublists consisting of distances
-    last_indices = [len(arr) - 1 for arr in trigger_array]
-    distances_list = [calculate_distances(indices, last_index) for indices, last_index in zip(one_positions, last_indices)]
-    flat_dist = np.concatenate(distances_list) # flatten distance list to have all the distances in a single array
-    plt.figure(figsize=(16,6),dpi=350)
-    plt.subplot(1, 2, 1)
-    sns.histplot(data=flat_dist, binwidth=1, stat='percent')
 
-    plt.xticks(np.arange(0,17,1))
-    plt.yticks(np.arange(0,55,5))
-    formatter = FuncFormatter(lambda y, _: f'{int(y)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
-
-    plt.title('Histogram of distance between trigger and target utterance')
-    plt.xlabel('Distance from target utterance')
-    plt.ylabel('Percent')
-
-    plt.subplot(1, 2, 2)
-    sns.histplot(data=flat_dist, binwidth=1, element='step', fill=False, cumulative=True, stat='density')
-    plt.ylabel('')
-    plt.xlabel('Distance from target utterance')
-
-    plt.yticks(np.arange(0,1.1,0.1))
-    plt.xticks(np.arange(0,17,1))
-    formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
-    plt.gca().yaxis.set_major_formatter(formatter)
-
-    plt.grid()
-    plt.title('Cumulative distribution of distance between trigger and target utterance')
+        # Define a formatter function to add percentage sign next to y ticks
+        # axes[i].set_yticks(np.arange(0,70,10))
+        axes[i].yaxis.set_major_formatter(formatter)
+        axes[i].set_xlabel('')
+        axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_yticks(np.arange(0,110,10))
+    fig.suptitle('Percentage Distribution of Emotion Classes')
+    axes[0].legend(fontsize='x-small')
+    # Show the plot
+    plt.tight_layout()
     plt.show()
+
+
+# Plot presence/abscence of triggers
+def plot_trigger(dfs: list[pd.DataFrame]):
+    n_dataframes = len(dfs)
+    titles = ['Train','Val','Test']
+    fig, axes = plt.subplots(figsize=(10, 6), dpi=120,nrows=1,ncols=n_dataframes)
+    formatter = FuncFormatter(lambda y, _: f'{int(y)}%')
+
+    # Count the occurrences of 'neutral' and 'other labels'
+#     for i, (df_em_perc, title) in enumerate(zip([df_em_perc_tr, df_em_perc_val, df_em_perc_test], ['Train', 'Val', 'Test'])):
+    for i, (df,title) in enumerate(zip(dfs,titles[:n_dataframes])):
+        df_expl = df.explode('triggers')
+
+        trigger_count = df_expl[df_expl['triggers'] == 1].shape[0]
+        no_trigger_count = df_expl[df_expl['triggers'] == 0].shape[0]
+        total_count = df_expl.shape[0]
+
+        # Calculate the percentages
+        trigger_percentage = (trigger_count / total_count) * 100
+        no_trigger_percentage = (no_trigger_count / total_count) * 100
+
+        # Create a DataFrame for the two categories
+        triggers_df = pd.DataFrame({
+            'Triggers': ['Trigger', 'No Trigger'],
+            'Percentage': [trigger_percentage, no_trigger_percentage]
+        })
+
+        if i ==0:
+            # Create a bar plot using Seaborn
+            sns.barplot(x='Triggers', y='Percentage', hue='Triggers', width=0.45, legend=True,
+                        data=triggers_df, edgecolor='white',ax=axes[i])
+
+        else:
+            sns.barplot(x='Triggers', y='Percentage', hue='Triggers', width=0.45, legend=False,
+                        data=triggers_df, edgecolor='white',ax=axes[i])
+            axes[i].set_ylabel('')
+
+        # Define a formatter function to add percentage sign next to y ticks
+        # axes[i].set_yticks(np.arange(0,70,10))
+        axes[i].yaxis.set_major_formatter(formatter)
+        axes[i].set_xlabel('')
+        axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_yticks(np.arange(0,110,10))
+
+
+    fig.suptitle('Percentage Distribution of Trigger presence')
+    axes[0].legend(fontsize='x-small')
+    
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
+
+
+
+############################## Labels visualisation ###################################
 
 
 from matplotlib.ticker import FuncFormatter
