@@ -412,7 +412,7 @@ def plot_trigger(dfs: list[pd.DataFrame]):
 
 ### Plot trigger per entry
     
-def plot_triggers_entry(dfs):
+def plot_triggers_entry(dfs, colors: list[str]):
     num_dfs = len(dfs)
     fig, axes = plt.subplots(figsize=(15, 6), dpi=300, nrows=1, ncols=num_dfs+1) # one more plot for the cumulative
     titles = ['Train', 'Val','Test']
@@ -430,7 +430,7 @@ def plot_triggers_entry(dfs):
 
         # Histogram
         sns.histplot(data=ones_count_per_subarray, binwidth=1, stat='percent',
-                    edgecolor='white', ax=axes[i], color=COLORS[i])
+                    edgecolor='white', ax=axes[i], color=colors[i])
         axes[i].set_title(f'{title} set',fontsize='medium')
         axes[i].set_xticks(number_of_ones)  # Set x-axis ticks
 
@@ -441,7 +441,7 @@ def plot_triggers_entry(dfs):
         # Cumulative distribution
         sns.histplot(data=ones_count_per_subarray, binwidth=1, element='step',
                      fill=False, cumulative=True, lw=1.6,label=f'{title}',
-                     stat='density', ax=axes[i+num_dfs], color=COLORS[i])
+                     stat='density', ax=axes[i+num_dfs], color=colors[i])
         axes[i+num_dfs].set_title(f'Cumulative distribution of triggers',fontsize='medium')
         axes[i+num_dfs].set_xticks(number_of_ones)
         axes[i+num_dfs].yaxis.set_major_formatter(formatter2)
@@ -469,7 +469,7 @@ def plot_triggers_entry(dfs):
     plt.suptitle('Number of trigger for each entry in the dataset', size=14, y=1.005)
     plt.show()
 
-def plot_trigger_distances(dfs: list[pd.DataFrame]):
+def plot_trigger_distances(dfs: list[pd.DataFrame], colors: list[str]):
     num_dfs = len(dfs)
     ncols = num_dfs+1
     fig, axes = plt.subplots(figsize=(ncols*5, 6), dpi=320, nrows=1, ncols=ncols) # one more plot for the cumulative
@@ -494,7 +494,7 @@ def plot_trigger_distances(dfs: list[pd.DataFrame]):
 
         # Histogram
         sns.histplot(data=diff_arr, binwidth=1, stat='percent',
-                    edgecolor='white', ax=axes[i], color=COLORS[i])
+                    edgecolor='white', ax=axes[i], color=colors[i])
         axes[i].set_title(f'{title} set',fontsize='medium')
         axes[i].set_xticks(unique_diff)  # Set x-axis ticks
 
@@ -505,7 +505,7 @@ def plot_trigger_distances(dfs: list[pd.DataFrame]):
         # Cumulative distribution
         sns.histplot(data=diff_arr, binwidth=1, element='step',
                      fill=False, cumulative=True, lw=1.6,label=f'{title}',
-                     stat='density', ax=axes[i+num_dfs], color=COLORS[i])
+                     stat='density', ax=axes[i+num_dfs], color=colors[i])
         axes[i+num_dfs].set_title(f'Cumulative distribution of triggers distances',fontsize='medium')
         # axes[i+num_dfs].set_xticks(unique_diff)
         axes[i+num_dfs].yaxis.set_major_formatter(formatter2)
