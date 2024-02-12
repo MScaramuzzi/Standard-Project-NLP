@@ -299,10 +299,6 @@ def plot_num_triggers_diag(trigger_array: np.array):
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.show()
 
-
-# def plot_trigger_distance(trigger_array: np.array):
-
-
 #### 2.3 Distribution of emotions across the dataset ####
 
 # 2.3.1 Plot distribution of neutral label with respect to other labels
@@ -543,17 +539,17 @@ from matplotlib.ticker import FuncFormatter
 
 def plot_emotion_distr(df_tr,df_val,df_test, model):
 
-    # sns.set_context('paper', font_scale=1.075)
+    sns.set_context(context=None, font_scale=0.97)
 
-    fig, axes = plt.subplots(figsize=(13.5, 6),dpi=350, nrows=1, ncols=3)
+    fig, axes = plt.subplots(figsize=(18,6),dpi=350, nrows=1, ncols=3)
 
-    emotions_tr = df_tr['emotions'] 
+    emotions_tr = df_tr['emotions']
     emotions_arr_tr =  np.concatenate(np.array(emotions_tr))
 
-    emotions_val = df_val['emotions'] 
+    emotions_val = df_val['emotions']
     emotions_arr_val =  np.concatenate(np.array(emotions_val))
 
-    emotions_test = df_test['emotions'] 
+    emotions_test = df_test['emotions']
     emotions_arr_test =  np.concatenate(np.array(emotions_test))
 
     df_em_perc_tr = pd.DataFrame(pd.Series(emotions_arr_tr)
@@ -593,7 +589,74 @@ def plot_emotion_distr(df_tr,df_val,df_test, model):
         axes[i].set_title(title)
         if i !=0:
             axes[i].set_ylabel('')
+        if i ==1:
+            axes[i].set_xlabel('Labels')
+        else:
+            axes[i].set_xlabel('')
+
+
 
     axes[0].legend(loc=1,ncols=2,fontsize=10)
     fig.suptitle(f"Distribution of emotion labels for {model}", fontsize=14)
+    plt.tight_layout()
     plt.show()
+
+
+def plot_trig_positions(df_efr_train, df_efr_val, df_efr_test, pos_trig):
+    sns.set_context(context=None, font_scale=0.95)
+
+    # Melt the DataFrame to long format for plotting with seaborn
+    df_long_tr = pd.melt(df_efr_train, value_vars=pos_trig, var_name='Trigger', value_name='Value')
+    df_long_val = pd.melt(df_efr_val, value_vars=pos_trig, var_name='Trigger', value_name='Value')
+    df_long_test = pd.melt(df_efr_test, value_vars=pos_trig, var_name='Trigger', value_name='Value')
+
+    # Calculate the percentage for each value within each trigger column
+    df_long_perc_tr = df_long_tr.groupby('Trigger')['Value'].value_counts(normalize=True).rename('Percentage').reset_index()
+    df_long_perc_val = df_long_val.groupby('Trigger')['Value'].value_counts(normalize=True).rename('Percentage').reset_index()
+    df_long_perc_test = df_long_test.groupby('Trigger')['Value'].value_counts(normalize=True).rename('Percentage').reset_index()
+
+    # Convert the percentage to a format suitable for the y-axis
+    df_long_perc_tr['Percentage'] = df_long_perc_tr['Percentage'] * 100
+    df_long_perc_val['Percentage'] = df_long_perc_val['Percentage'] * 100
+    df_long_perc_test['Percentage'] = df_long_perc_test['Percentage'] * 100
+
+    fig, axes = plt.subplots(figsize=(19, 6),dpi=350, nrows=1, ncols=3)
+
+    # Create the histplot with Seaborn
+    axes[0].set_title('Train set',fontsize='large')
+    sns.barplot(data=df_long_perc_tr, x='Trigger',edgecolor='white', palette='Set2',legend=True,
+                y='Percentage', hue='Value',ax=axes[0])
+
+    axes[1].set_title('Val set',fontsize='large')
+
+    sns.barplot(data=df_long_perc_val, x='Trigger',edgecolor='white',palette='Set2',legend=False,
+                y='Percentage', hue='Value', ax=axes[1])
+
+    axes[2].set_title('Test set',fontsize='large')
+
+    sns.barplot(data=df_long_perc_test, x='Trigger',edgecolor='white', palette='Set2',legend=False,
+                y='Percentage', hue='Value', ax=axes[2])
+
+    # Set the y-axis label to show percentage
+    for ax in axes:
+        ax.tick_params(axis='x', labelsize='smaller')
+        ax.set_yticks(np.arange(0,110,10))
+
+        if ax == axes[1]:
+            ax.set_xlabel('Labels')
+        else:
+            ax.set_xlabel('')
+
+        if ax != axes[0]:
+            ax.set_ylabel('')
+
+
+
+    # Use id2label to update the legend
+    handles, labels = axes[0].get_legend_handles_labels()
+    axes[0].legend(handles, ['No Trigger', 'Trigger'], loc='upper left' ,fontsize='small')
+
+    fig.suptitle('Distribution of trigger labels across data splits')
+    plt.tight_layout()
+    plt.show()
+
