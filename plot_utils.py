@@ -531,6 +531,68 @@ def plot_trigger_distances(dfs: list[pd.DataFrame], colors: list[str]):
     plt.suptitle('Distance of trigger from target utterance for each entry in the dataset', size=14, y=1.005)
     plt.show()
 
+
+def plot_trigger_by_type(dfs: pd.DataFrame):
+
+    # Create a Seaborn barplot
+    num_dfs = len(dfs)
+    _, axes = plt.subplots(figsize=(6*num_dfs, 8),dpi=100*num_dfs,nrows=1, ncols=num_dfs)
+    titles = ['Train', 'Val','Test']
+    formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
+
+
+    for i, (df_i, title) in enumerate(zip(dfs,titles[:num_dfs] )):
+
+        trigger_array = df_i['triggers']
+        cast_to_array = lambda subarray: np.array(subarray) # Define a lambda function to cast subarrays to NumPy arrays
+        trigger_np_array = trigger_array.apply(cast_to_array) # Apply the lambda function to the 'triggers' column
+
+
+        # 1. Count the number of occurrances where there is no trigger in the utterance ---> No-trigger
+        no_trigger = np.sum(trigger_np_array.apply(lambda x: np.sum(x) == 0))
+        percent_no_trigger = no_trigger / len(trigger_np_array)
+
+        # 2. Count the number of occurrances where there is no trigger in the utterance ---> Self-trigger
+        self_trigger = np.sum(trigger_np_array.apply(lambda x: x[-1] == 1 and np.sum(x) == 1))
+        percent_self_trigger = self_trigger / len(trigger_np_array)
+
+        # 3. Count the number of occurrances where there is no trigger in the utterance ---> Single-trigger
+        single_trigger = np.sum(trigger_np_array.apply(lambda x: np.sum(x) == 1 and x[-1] != 1))
+        percent_single_trigger = single_trigger / len(trigger_np_array)
+
+        # 4. Count the occurrences where there is one and only one "1" in each subarray ---> Multi-trigger
+        mul_trigger = np.sum(trigger_np_array.apply(lambda x: np.sum(x) > 1))
+        percent_mul_trigger = mul_trigger / len(trigger_np_array)
+
+        # Create a DataFrame
+        data = pd.DataFrame({
+            'Trigger Type': ['Single Trigger', 'Multi Trigger', 'No Trigger', 'Self Trigger'],
+            'Percentage': [percent_single_trigger, percent_mul_trigger, percent_no_trigger, percent_self_trigger]
+        })
+
+        # Sort the DataFrame by 'Count' in descending order
+        # sorted_triggers = data.sort_values(by="Percentage", ascending=False)
+
+        # Convert 'Trigger Type' to a regular Python list
+        trigger_types = data['Trigger Type'].tolist()
+
+        sns.barplot(x='Trigger Type', y='Percentage', data=data,
+                    ax=axes[i], hue="Trigger Type",legend=True)
+
+        # # Add percentage sign next to y ticks
+        axes[i].yaxis.set_major_formatter(formatter)
+        axes[i].set_yticks(np.arange(0,1.1,0.1))  # Set y-axis ticks
+        axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_xticks('')
+        axes[i].set_xlabel('')
+
+        if i >0:
+            axes[i].legend('')
+    plt.tight_layout()
+    plt.suptitle('Distribution of types', size='large', y=1.005)
+
+    plt.show()
+
 ############################## Labels visualisation ###################################
 
 
