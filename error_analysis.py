@@ -45,8 +45,8 @@ def get_errors_df(confusion_matrix, labels) -> pd.DataFrame:
 def infer_baseline_dummy(task, df_train, df_test, structuring_df, 
                          target_labels, seed: int):
     # plotting utilities
-    SECTION_SEPARATOR = '---'
-    MODEL_SEPARATOR = '*'
+    SECTION_SEPARATOR = '--'
+    MODEL_SEPARATOR = '**'
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
@@ -73,12 +73,12 @@ def infer_baseline_dummy(task, df_train, df_test, structuring_df,
         uni_report = classification_report(y_true, uni_preds, target_names=target_labels)
         maj_report = classification_report(y_true, maj_preds, target_names=target_labels)
 
-        print(f'{SECTION_SEPARATOR*15} BASELINES on seed {seed} {SECTION_SEPARATOR*15}')
+        print(f'{SECTION_SEPARATOR*8} BASELINES on seed {seed} {SECTION_SEPARATOR*8}')
         print()
         print(f'Uniform classifiers:') 
         print(uni_report)
         print()
-        print(f'{MODEL_SEPARATOR*30}')
+        print(f'{MODEL_SEPARATOR*27}')
         print()
         print(f'Majority classifiers:') 
         print(maj_report)
@@ -100,26 +100,26 @@ def infer_baseline_dummy(task, df_train, df_test, structuring_df,
             for name, measures_dict in report.items():
 
                 if name in target_labels:
-                    f1s_targets[name] = measures_dict['f1-score']
+                    f1s_targets[name] = round(measures_dict['f1-score'], 3)
                 if name == 'macro avg':
-                    unroll_f1s[f'{model_name}'] = measures_dict['f1-score']
+                    unroll_f1s[f'{model_name}'] = round(measures_dict['f1-score'], 3)
             f1s[f'{model_name}'] = f1s_targets
             
         if task.upper() == 'ERC':
             # uniform
             all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(uni_preds, structuring_df, 'emotions_num')
-            sequence_f1s['UNIFORM ERC'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            sequence_f1s['UNIFORM ERC'] = round(ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog), 3)
             # majority
             all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(maj_preds, structuring_df, 'emotions_num')
-            sequence_f1s['MAJORITY ERC'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            sequence_f1s['MAJORITY ERC'] = round(ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog), 3)
         
         else:
             # uniform
             all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(uni_preds, structuring_df, 'triggers')
-            sequence_f1s['UNIFORM EFR'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            sequence_f1s['UNIFORM EFR'] = round(ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog), 3)
             # majority
             all_predictions_dialog, all_labels_dialog = ut.restructuring_flat_preds(maj_preds, structuring_df, 'triggers')
-            sequence_f1s['MAJORITY EFR'] = ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog)
+            sequence_f1s['MAJORITY EFR'] = round(ut.compute_sequence_f1_for_dialogues(all_predictions_dialog, all_labels_dialog), 3)
 
     return f1s, unroll_f1s, sequence_f1s
 
@@ -245,9 +245,10 @@ def plot_f1_w_distribution(df_train: pd.DataFrame, task: str, f1s: dict, unroll_
         print('Task not accepted. Please choose between "ERC" and "EFR".')
         return
 
-    _, ax1 = plt.subplots(figsize=(14, 6), dpi=300)
+    _, ax1 = plt.subplots(figsize=(14, 6), dpi=350)
     markers = ['o','X','d','*','p']
     sc_colors = ['limegreen','magenta', 'deepskyblue', 'firebrick', 'orange']
+
     if task == 'ERC':
         x = np.concatenate(df_train['emotions_num'])
     else:
@@ -276,12 +277,13 @@ def plot_f1_w_distribution(df_train: pd.DataFrame, task: str, f1s: dict, unroll_
 
     # Plot sequence F1-scores
     for i, sequence_f1s in enumerate(sequence_f1s.values()):
-        plt.scatter(len(id2label), sequence_f1s, color=sc_colors[i], marker=markers[i])
+        plt.scatter(len(id2label)+1, sequence_f1s, color=sc_colors[i], marker=markers[i])
+
     ax1.set_ylabel('F1-score')
-    ax1.set_xticks(np.arange(len(id2label) + 1))
-    ax1.set_xticklabels(list(id2label.values()) + ['Mean'])
+    ax1.set_xticks(np.arange(len(id2label) + 2))
+    ax1.set_xticklabels(list(id2label.values()) + ['Unroll seq f1', 'Seq f1'])
     ax1.set_yticks(np.arange(0, 1.1, 0.1))
-    ax1.legend(loc='upper right')
+    ax1.legend(loc='upper center')
     ax1.grid(linestyle='dashed')
     ax1.set_ylim([0, 1])
     ax2 = ax1.twinx()
