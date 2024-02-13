@@ -14,6 +14,7 @@ import os
 from typing import Dict
 
 def colgaCollator(batch):
+    # Define custom collator to retrieve speakers, emotions, suggestive_text and labels
     speakers_utterances = {
         'input_ids': torch.stack([torch.tensor(item['speakers_utterances_input_ids']) for item in batch]),
         'attention_mask': torch.stack([torch.tensor(item['speakers_utterances_attention_mask']) for item in batch])
@@ -75,6 +76,7 @@ class ConvExtractor(nn.Module):
         return x
 
 class LocalNet(nn.Module):
+    # Define local net to retrieve utterances (with suggestive text) and speaker as input 
     def __init__(self, checkpoint: str, device: torch.device):
         super(LocalNet, self).__init__()
         self.ext1 = ConvExtractor(checkpoint=checkpoint, device=device)
