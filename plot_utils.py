@@ -1,3 +1,4 @@
+# Data processing libraries
 import pandas as pd 
 import numpy as np
 
@@ -67,7 +68,7 @@ def plot_instances_distribution(num_instances_tr: list[int], df_max_tr: pd.DataF
     fig.text(0.5, -0.04, 'Number of instances', ha='center', size=14) # set common x axis label for the two subplots
     plt.show()
 
-####### 2.2 Dialogues composition #######
+#region ####### 2.2 Dialogues composition ###########
 
 # 2.2.1 Distribution of words per dialogue
 def plot_num_words_dial(max_dialogues_tr: list[str], max_dialogues_val: list[str],
@@ -274,6 +275,8 @@ def plot_num_words_utterance(lengths_array_tr: np.array, lengths_array_val: np.a
     fig.tight_layout()
     plt.show()
 
+# endregion
+
 #### 2.4 Distribution of triggers across the dataset ####
 
 def plot_num_triggers_diag(trigger_array: np.array):
@@ -299,18 +302,19 @@ def plot_num_triggers_diag(trigger_array: np.array):
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.show()
 
+
 #### 2.3 Distribution of emotions across the dataset ####
 
 # 2.3.1 Plot distribution of neutral label with respect to other labels
 
 def plot_emotion_neutral(dfs: list[pd.DataFrame]):
+    # Count the occurrences of 'neutral' and 'other labels'
+
     n_dataframes = len(dfs)
     titles = ['Train','Val','Test']
     fig, axes = plt.subplots(figsize=(10, 6), dpi=120,nrows=1,ncols=n_dataframes)
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%')
 
-    # Count the occurrences of 'neutral' and 'other labels'
-#     for i, (df_em_perc, title) in enumerate(zip([df_em_perc_tr, df_em_perc_val, df_em_perc_test], ['Train', 'Val', 'Test'])):
     for i, (df,title) in enumerate(zip(dfs,titles[:n_dataframes])):
         df_expl = df.explode('emotions')
 
@@ -318,7 +322,7 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
         other_labels_count = df_expl[df_expl['emotions'] != 'neutral'].shape[0]
         total_count = df_expl.shape[0]
 
-        # Calculate the percentages
+        # Compute the percentages
         neutral_percentage = (neutral_count / total_count) * 100
         other_labels_percentage = (other_labels_count / total_count) * 100
 
@@ -327,7 +331,6 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
             'Emotion': ['Neutral', 'Other labels'],
             'Percentage': [neutral_percentage, other_labels_percentage]
         })
-
 
         if i ==0:
             # Create a bar plot using Seaborn
@@ -341,7 +344,6 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
 
 
         # Define a formatter function to add percentage sign next to y ticks
-        # axes[i].set_yticks(np.arange(0,70,10))
         axes[i].yaxis.set_major_formatter(formatter)
         axes[i].set_xlabel('')
         axes[i].set_title(f'{title} set',fontsize='medium')
@@ -353,18 +355,15 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
     plt.show()
 
 
-# Plot presence/abscence of triggers
+# 2.3.2 Plot presence/abscence of triggers
 def plot_trigger(dfs: list[pd.DataFrame]):
     n_dataframes = len(dfs)
     titles = ['Train','Val','Test']
     fig, axes = plt.subplots(figsize=(10, 6), dpi=120,nrows=1,ncols=n_dataframes)
     formatter = FuncFormatter(lambda y, _: f'{int(y)}%')
 
-    # Count the occurrences of 'neutral' and 'other labels'
-#     for i, (df_em_perc, title) in enumerate(zip([df_em_perc_tr, df_em_perc_val, df_em_perc_test], ['Train', 'Val', 'Test'])):
     for i, (df,title) in enumerate(zip(dfs,titles[:n_dataframes])):
-        df_expl = df.explode('triggers')
-
+        df_expl = df.explode('triggers') # unroll dataset
         trigger_count = df_expl[df_expl['triggers'] == 1].shape[0]
         no_trigger_count = df_expl[df_expl['triggers'] == 0].shape[0]
         total_count = df_expl.shape[0]
@@ -406,7 +405,7 @@ def plot_trigger(dfs: list[pd.DataFrame]):
 
 
 
-### Plot trigger per entry
+### 2.3.3. Plot trigger per entry
     
 def plot_triggers_entry(dfs, colors: list[str]):
     num_dfs = len(dfs)
@@ -533,20 +532,16 @@ def plot_trigger_distances(dfs: list[pd.DataFrame], colors: list[str]):
 
 
 def plot_trigger_by_type(dfs: pd.DataFrame):
-
     # Create a Seaborn barplot
     num_dfs = len(dfs)
     _, axes = plt.subplots(figsize=(6*num_dfs, 8),dpi=100*num_dfs,nrows=1, ncols=num_dfs)
     titles = ['Train', 'Val','Test']
     formatter = FuncFormatter(lambda y, _: f'{int(y*100)}%') # add percentage sign next to y ticks
 
-
     for i, (df_i, title) in enumerate(zip(dfs,titles[:num_dfs] )):
-
         trigger_array = df_i['triggers']
         cast_to_array = lambda subarray: np.array(subarray) # Define a lambda function to cast subarrays to NumPy arrays
         trigger_np_array = trigger_array.apply(cast_to_array) # Apply the lambda function to the 'triggers' column
-
 
         # 1. Count the number of occurrances where there is no trigger in the utterance ---> No-trigger
         no_trigger = np.sum(trigger_np_array.apply(lambda x: np.sum(x) == 0))
@@ -572,9 +567,6 @@ def plot_trigger_by_type(dfs: pd.DataFrame):
 
         # Sort the DataFrame by 'Count' in descending order
         # sorted_triggers = data.sort_values(by="Percentage", ascending=False)
-
-        # Convert 'Trigger Type' to a regular Python list
-        trigger_types = data['Trigger Type'].tolist()
 
         sns.barplot(x='Trigger Type', y='Percentage', data=data,
                     ax=axes[i], hue="Trigger Type",legend=True)
