@@ -574,7 +574,6 @@ def plot_trigger_by_type(dfs: pd.DataFrame):
         else:
             sns.barplot(x='Trigger Type', y='Percentage', data=data,
                         ax=axes[i], hue="Trigger Type",legend=False)
-            axes[i].set_xticks('')
         # # Add percentage sign next to y ticks
         axes[i].yaxis.set_major_formatter(formatter)
         axes[i].set_yticks(np.arange(0,1.1,0.1))  # Set y-axis ticks
