@@ -354,6 +354,59 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
     plt.tight_layout()
     plt.show()
 
+def plot_emotions_entry(dfs: list[pd.DataFrame],emotions: list[str]):
+    num_dfs = len(dfs)
+    fig, axes = plt.subplots(figsize=(7*num_dfs, 2.5*num_dfs), dpi=300, nrows=1, ncols=num_dfs) # one more plot for the cumulative
+    titles = ['Train', 'Val','Test']
+    # formatter1 = FuncFormatter(lambda y, _: f'{int(y)}%')
+
+    max_count= 0
+    for i, (df_i, title) in enumerate(zip(dfs,titles[:num_dfs])):
+        # Count occurrences of each emotion per row
+        emotion_counts = df_i['emotions'].apply(lambda x: {emotion: x.count(emotion) for emotion in emotions})
+
+        # Flatten the list of dictionaries into a list of counts
+        counts = {emotion: [count[emotion] for count in emotion_counts] for emotion in emotions}
+
+        # Create a DataFrame with the counts
+        df_counts = pd.DataFrame(counts)
+
+        # Melt the DataFrame to have a column for the emotions and a column for the counts
+        df_melted = df_counts.melt(var_name='emotion', value_name='count')
+
+        # Calculate the average frequency of each emotion
+        average_counts = df_melted.groupby('emotion')['count'].mean().reset_index()
+
+        # Sort the DataFrame by average frequency
+        average_counts = average_counts.sort_values(by='count', ascending=False)
+
+        max_em = average_counts['count'].max()
+        max_count = max(max_count, max_em)
+        # Define color palette
+        palette = sns.color_palette('muted', len(emotions))
+
+        # Plot bar plot with hue and explicit labels for legend
+        for j, emotion in enumerate(average_counts['emotion']):
+            sns.barplot(data=df_melted[df_melted['emotion'] == emotion], x='emotion', y='count',
+                        ax=axes[i], color=palette[j], label=emotion, legend=True)
+
+        # axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_yticks(np.arange(0,max_count + 0.5,0.5))
+        axes[i].legend(ncols=2)
+        axes[i].set_xlabel('')
+        if i>0:
+            axes[i].set_ylabel('')
+
+        else:
+            axes[i].set_ylabel('Avg emotion count per utterance')
+
+        # Set consistent y-axis limits
+    for i in range(len(axes)):
+        axes[i].set_ylim(0, max_count+0.5)
+    fig.suptitle('Distribution of emotions label per utterance',fontsize='large')
+    plt.tight_layout()
+
+    plt.show()
 
 # 2.3.2 Plot presence/abscence of triggers
 def plot_trigger(dfs: list[pd.DataFrame]):
