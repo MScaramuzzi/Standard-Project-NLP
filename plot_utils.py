@@ -349,7 +349,7 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
         axes[i].set_title(f'{title} set',fontsize='medium')
         axes[i].set_yticks(np.arange(0,110,10))
     fig.suptitle('Percentage Distribution of Emotion Classes')
-    axes[0].legend(fontsize='x-small')
+    axes[0].legend(fontsize='x-small',ncols=2)
     # Show the plot
     plt.tight_layout()
     plt.show()
