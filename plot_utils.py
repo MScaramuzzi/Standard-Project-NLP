@@ -354,11 +354,12 @@ def plot_emotion_neutral(dfs: list[pd.DataFrame]):
     plt.tight_layout()
     plt.show()
 
+# 2.3.2 Plot distribution of emotions labels for each entry 
+    
 def plot_emotions_entry(dfs: list[pd.DataFrame],emotions: list[str]):
     num_dfs = len(dfs)
     fig, axes = plt.subplots(figsize=(7*num_dfs, 2.5*num_dfs), dpi=300, nrows=1, ncols=num_dfs) # one more plot for the cumulative
     titles = ['Train', 'Val','Test']
-    # formatter1 = FuncFormatter(lambda y, _: f'{int(y)}%')
 
     max_count= 0
     for i, (df_i, title) in enumerate(zip(dfs,titles[:num_dfs])):
@@ -390,7 +391,7 @@ def plot_emotions_entry(dfs: list[pd.DataFrame],emotions: list[str]):
             sns.barplot(data=df_melted[df_melted['emotion'] == emotion], x='emotion', y='count',
                         ax=axes[i], color=palette[j], label=emotion, legend=True)
 
-        # axes[i].set_title(f'{title} set',fontsize='medium')
+        axes[i].set_title(f'{title} set',fontsize='medium')
         axes[i].set_yticks(np.arange(0,max_count + 0.5,0.5))
         axes[i].legend(ncols=2)
         axes[i].set_xlabel('')
