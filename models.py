@@ -76,7 +76,7 @@ class ConvExtractor(nn.Module):
         return x
 
 class LocalNet(nn.Module):
-    # Define local net to retrieve utterances (with suggestive text) and speaker as input 
+    # Define local net to retrieve utterances (with suggestive text) and speaker as input  
     def __init__(self, checkpoint: str, device: torch.device):
         super(LocalNet, self).__init__()
         self.ext1 = ConvExtractor(checkpoint=checkpoint, device=device)
