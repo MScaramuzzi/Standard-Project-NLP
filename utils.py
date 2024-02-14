@@ -448,5 +448,26 @@ def preprocess_SuggestiveText_EFR(examples: pd.DataFrame, tokenizer,
         "suggestive_text_mask": st_attention_mask,
         "labels": labels
     }
+
+
+def unroll_df(df, window_size : int = 7):
+    df = df.copy()
+    unrolled_data = []
+    padded_triggers = [0.0]*window_size
+
+    for _, row in df.iterrows():
+        for speaker, emotion, emo_num, utterance, trigger in zip(row['speakers'], row['emotions'], row['emotions_num'], row['utterances'], row['triggers']):
+            unrolled_data.append({
+                'dialogue_id': row['dialogue_id'],
+                'speakers': [speaker],
+                'emotions': [emotion],
+                'emotions_num': [emo_num],
+                'utterances': [utterance],
+                'triggers': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, trigger]
+            })
+
+    unrolled_df = pd.DataFrame(unrolled_data)
+
+    return unrolled_df
 ##### *-------------- Preprocessing/Data handling section  --------------*
 # endregion
