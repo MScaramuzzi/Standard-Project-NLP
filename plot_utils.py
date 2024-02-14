@@ -568,18 +568,21 @@ def plot_trigger_by_type(dfs: pd.DataFrame):
         # Sort the DataFrame by 'Count' in descending order
         # sorted_triggers = data.sort_values(by="Percentage", ascending=False)
 
-        sns.barplot(x='Trigger Type', y='Percentage', data=data,
-                    ax=axes[i], hue="Trigger Type",legend=True)
-
+        if i==0:
+            sns.barplot(x='Trigger Type', y='Percentage', data=data,
+                        ax=axes[i], hue="Trigger Type",legend=True)
+        else:
+            sns.barplot(x='Trigger Type', y='Percentage', data=data,
+                        ax=axes[i], hue="Trigger Type",legend=False)
+            axes[i].set_xticks('')
         # # Add percentage sign next to y ticks
         axes[i].yaxis.set_major_formatter(formatter)
         axes[i].set_yticks(np.arange(0,1.1,0.1))  # Set y-axis ticks
         axes[i].set_title(f'{title} set',fontsize='medium')
-        axes[i].set_xticks('')
+        axes[i].tick_params(axis='x', labelsize='small')
         axes[i].set_xlabel('')
 
-        if i >0:
-            axes[i].legend('')
+        axes[i].legend(ncols=2)
     plt.tight_layout()
     plt.suptitle('Distribution of types', size='large', y=1.005)
 
