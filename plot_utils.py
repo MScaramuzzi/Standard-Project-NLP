@@ -397,7 +397,7 @@ def plot_trigger(dfs: list[pd.DataFrame]):
 
 
     fig.suptitle('Percentage Distribution of Trigger presence')
-    axes[0].legend(fontsize='x-small')
+    axes[0].legend(fontsize='x-small',ncols=2)
     
     # Show the plot
     plt.tight_layout()
